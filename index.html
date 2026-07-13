@@ -1,0 +1,835 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Durham Coach — 180 to 160</title>
+<style>
+  :root{
+    --page:#f6f3ec; --card:#fffdf9; --card2:#f1ede3;
+    --ink:#1d1a14; --ink2:#5d574c; --muted:#8f887a;
+    --line:#e5e0d3; --hairline:rgba(29,26,20,.10);
+    --accent:#1c6b52; --accent-ink:#ffffff; --accent-soft:#e3ede7;
+    --series:#2a78d6; --grid:#e7e3d8; --axis:#c8c2b2;
+    --good:#006300; --warn:#8a5800; --crit:#c23434;
+    --band:rgba(28,107,82,.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --page:#191713; --card:#211f1b; --card2:#2a2822;
+      --ink:#f0ece2; --ink2:#b3ac9e; --muted:#847d6f;
+      --line:#35322a; --hairline:rgba(240,236,226,.10);
+      --accent:#46b08d; --accent-ink:#10221c; --accent-soft:#26332d;
+      --series:#3987e5; --grid:#2e2b25; --axis:#4a463c;
+      --good:#3fbf3f; --warn:#e0a33c; --crit:#e66767;
+      --band:rgba(70,176,141,.12);
+    }
+  }
+  :root[data-theme="light"]{
+    --page:#f6f3ec; --card:#fffdf9; --card2:#f1ede3;
+    --ink:#1d1a14; --ink2:#5d574c; --muted:#8f887a;
+    --line:#e5e0d3; --hairline:rgba(29,26,20,.10);
+    --accent:#1c6b52; --accent-ink:#ffffff; --accent-soft:#e3ede7;
+    --series:#2a78d6; --grid:#e7e3d8; --axis:#c8c2b2;
+    --good:#006300; --warn:#8a5800; --crit:#c23434;
+    --band:rgba(28,107,82,.10);
+  }
+  :root[data-theme="dark"]{
+    --page:#191713; --card:#211f1b; --card2:#2a2822;
+    --ink:#f0ece2; --ink2:#b3ac9e; --muted:#847d6f;
+    --line:#35322a; --hairline:rgba(240,236,226,.10);
+    --accent:#46b08d; --accent-ink:#10221c; --accent-soft:#26332d;
+    --series:#3987e5; --grid:#2e2b25; --axis:#4a463c;
+    --good:#3fbf3f; --warn:#e0a33c; --crit:#e66767;
+    --band:rgba(70,176,141,.12);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--page); color:var(--ink);
+    font:16px/1.5 -apple-system,"Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px 96px}
+  @media(min-width:800px){.wrap{padding-bottom:40px}}
+
+  header.app{
+    position:sticky;top:0;z-index:20;background:var(--page);
+    border-bottom:1px solid var(--line);margin:0 -16px;padding:14px 16px 10px;
+  }
+  .brand{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .brand h1{margin:0;font-size:20px;font-weight:800;letter-spacing:-.03em}
+  .brand h1 span{color:var(--accent)}
+  .weekchip{font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+  .weekchip b{color:var(--ink)}
+  .weekchip button{background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:0 0 0 6px;text-decoration:underline}
+
+  nav.tabs{
+    position:fixed;bottom:0;left:0;right:0;z-index:30;
+    display:flex;background:var(--card);border-top:1px solid var(--line);
+    padding:6px max(8px, env(safe-area-inset-left)) max(8px, env(safe-area-inset-bottom));
+  }
+  nav.tabs button{
+    flex:1;background:none;border:none;cursor:pointer;color:var(--muted);
+    font:600 11.5px/1.2 -apple-system,"Segoe UI",system-ui,sans-serif;
+    letter-spacing:.04em;text-transform:uppercase;padding:9px 2px;border-radius:8px;
+  }
+  nav.tabs button.on{color:var(--accent);background:var(--accent-soft)}
+  nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  @media(min-width:800px){
+    nav.tabs{position:static;border:none;background:none;gap:6px;padding:14px 0 2px}
+    nav.tabs button{flex:0 0 auto;padding:8px 16px;border:1px solid var(--line);border-radius:999px;background:var(--card)}
+    nav.tabs button.on{border-color:var(--accent)}
+  }
+
+  section.tab{display:none}
+  section.tab.on{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1}}
+  @media(prefers-reduced-motion:reduce){section.tab.on{animation:none}}
+
+  h2{font-size:15px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);margin:26px 0 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin:10px 0}
+  .card h3{margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .sub{color:var(--ink2);font-size:14px;margin:2px 0}
+  .fine{color:var(--muted);font-size:13px}
+  .cue{color:var(--ink2);font-size:13.5px;font-style:italic;margin:4px 0 0}
+  .cue b{color:var(--accent);font-style:normal;font-weight:700}
+
+  .rowline{display:flex;align-items:flex-start;gap:12px}
+  .rowline .grow{flex:1;min-width:0}
+
+  .check{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--hairline);cursor:pointer}
+  .check:last-child{border-bottom:none}
+  .check input{width:21px;height:21px;margin:2px 0 0;accent-color:var(--accent);flex:none;cursor:pointer}
+  .check.donetext .t{text-decoration:line-through;color:var(--muted)}
+  .check .t{font-weight:600;font-size:15px}
+  .check .d{color:var(--ink2);font-size:13.5px}
+
+  .pill{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+    border-radius:999px;padding:3px 10px;background:var(--card2);color:var(--ink2)}
+  .pill.am{background:var(--accent);color:var(--accent-ink)}
+  .pill.hint{background:var(--accent-soft);color:var(--accent)}
+  .pill.warn{background:none;border:1px solid var(--warn);color:var(--warn)}
+
+  .seg{display:flex;gap:6px;margin:12px 0}
+  .seg button{flex:1;padding:10px 6px;border:1px solid var(--line);background:var(--card);border-radius:8px;
+    font:700 13.5px/1.25 -apple-system,"Segoe UI",system-ui,sans-serif;color:var(--ink2);cursor:pointer}
+  .seg button.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+  .seg button small{display:block;font-weight:500;font-size:11px;opacity:.85}
+
+  .ex{border-bottom:1px solid var(--line);padding:14px 0}
+  .ex:last-child{border-bottom:none}
+  .ex .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .ex .nm{font-weight:700;font-size:15.5px}
+  .ex .rx{color:var(--ink2);font-size:13.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .last{font-size:13px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+  .sets{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .set{display:flex;align-items:center;gap:4px;background:var(--card2);border-radius:8px;padding:6px 8px}
+  .set input{width:52px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;
+    padding:6px 4px;font:600 14px/1 -apple-system,system-ui,sans-serif;text-align:center;font-variant-numeric:tabular-nums}
+  .set input:focus-visible{outline:2px solid var(--accent);outline-offset:0}
+  .set .x{color:var(--muted);font-size:12px}
+
+  table.plain{width:100%;border-collapse:collapse;font-size:14px}
+  table.plain th{text-align:left;font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);
+    font-weight:700;padding:6px 8px 6px 0;border-bottom:1px solid var(--line)}
+  table.plain td{padding:8px 8px 8px 0;border-bottom:1px solid var(--hairline);vertical-align:top}
+  table.plain tr:last-child td{border-bottom:none}
+  .num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .scrollx{overflow-x:auto}
+
+  .macros{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+  .macro{background:var(--card2);border-radius:8px;padding:10px 12px}
+  .macro .v{font-size:19px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+  .macro .l{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2);font-weight:700}
+  .macro .n{font-size:12px;color:var(--muted)}
+
+  .btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;padding:11px 18px;
+    font:700 14.5px/1 -apple-system,system-ui,sans-serif;cursor:pointer}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--ink2)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .weightform{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .weightform input[type=number]{width:110px;font-size:22px;font-weight:800;padding:10px;border:1px solid var(--line);
+    border-radius:8px;background:var(--card);color:var(--ink);font-variant-numeric:tabular-nums;text-align:center}
+  .weightform input[type=date]{padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:14px}
+
+  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .stat3 .macro .v{font-size:22px}
+  .rate-good{color:var(--good)} .rate-warn{color:var(--warn)} .rate-crit{color:var(--crit)}
+
+  .chartbox{position:relative;margin-top:6px}
+  .chartbox svg{display:block;width:100%;height:auto}
+  .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--page);border-radius:6px;
+    padding:5px 9px;font-size:12.5px;font-weight:600;white-space:nowrap;transform:translate(-50%,-130%);
+    display:none;font-variant-numeric:tabular-nums}
+
+  .grochead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .groitem{display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid var(--hairline);cursor:pointer}
+  .groitem:last-child{border-bottom:none}
+  .groitem input{width:20px;height:20px;accent-color:var(--accent);flex:none;cursor:pointer}
+  .groitem .n{flex:1;font-weight:600;font-size:14.5px}
+  .groitem.got .n{color:var(--muted);text-decoration:line-through}
+  .groitem .q{color:var(--ink2);font-size:13px}
+  .groitem .p{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums;width:38px;text-align:right}
+
+  .callout{border-left:3px solid var(--accent);background:var(--card2);border-radius:0 8px 8px 0;padding:10px 14px;margin:10px 0;font-size:14px}
+  .callout.warn{border-left-color:var(--warn)}
+  .callout.crit{border-left-color:var(--crit)}
+  ul.tight{margin:6px 0;padding-left:20px} ul.tight li{margin:4px 0;font-size:14px}
+  .weekhl{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px}
+  dialog{border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);padding:20px;max-width:320px}
+  dialog::backdrop{background:rgba(0,0,0,.35)}
+</style>
+
+<div class="wrap">
+  <header class="app">
+    <div class="brand">
+      <h1>Durham <span>Coach</span></h1>
+      <div class="weekchip" id="weekchip"></div>
+    </div>
+    <nav class="tabs" id="tabs" aria-label="Sections">
+      <button data-tab="today" class="on">Today</button>
+      <button data-tab="train">Train</button>
+      <button data-tab="run">Run</button>
+      <button data-tab="eat">Eat</button>
+      <button data-tab="shop">Shop</button>
+      <button data-tab="trend">Trend</button>
+    </nav>
+  </header>
+
+  <section class="tab on" id="tab-today"></section>
+  <section class="tab" id="tab-train"></section>
+  <section class="tab" id="tab-run"></section>
+  <section class="tab" id="tab-eat"></section>
+  <section class="tab" id="tab-shop"></section>
+  <section class="tab" id="tab-trend"></section>
+</div>
+
+<dialog id="startdlg">
+  <h3 style="margin:0 0 8px">Program start date</h3>
+  <p class="sub">Week 1 begins on this Monday. It drives the run progression, rep targets and checkpoints.</p>
+  <input type="date" id="startinput" style="width:100%;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:15px">
+  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+    <button class="btn ghost" id="startcancel">Cancel</button>
+    <button class="btn" id="startsave">Save</button>
+  </div>
+</dialog>
+
+<script>
+'use strict';
+/* ---------------- storage ---------------- */
+const KEY='durham-coach-v1';
+const state = load();
+function load(){
+  try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.start) return s; }catch(e){}
+  return { start:'2026-07-13', primer:{}, done:{}, logs:{}, weights:[], grocery:{week:null,checked:{}} };
+}
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+
+/* ---------------- date helpers ---------------- */
+function todayISO(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function parseISO(s){ const p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
+function fmtShort(s){ return parseISO(s).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+function weekNum(){ // 0 = program hasn't started yet
+  const diff = parseISO(todayISO()) - parseISO(state.start);
+  return Math.max(0, Math.floor(diff/(7*864e5)) + 1);
+}
+function daysUntilStart(){
+  return Math.round((parseISO(state.start) - parseISO(todayISO()))/864e5);
+}
+const DOW = new Date().getDay();
+
+/* ---------------- program data ---------------- */
+const PRIMER=[
+  {t:'Glute bridges × 15', d:'Hold 2 s at the top — crack a walnut between your cheeks.'},
+  {t:'Side-lying band abductions × 12 per side', d:'Lift with the side of the hip, not the thigh. Toe pointed slightly down.'},
+  {t:'Dead bugs × 8 per side', d:'Lower back stays glued to the floor, like you’re squashing a grape under it.'},
+  {t:'Stomach vacuums 2 × 20 s', d:'Exhale fully, navel to spine. Try to make your waistband fall off.'}
+];
+const WORKOUTS={
+  A:{name:'Day A — Glutes + Lower', tag:'heavy hinge day', ex:[
+    {id:'hipthrust', n:'Hip thrust (barbell or dumbbell)', rx:'4 × 8–12', sets:4, top:12,
+     cue:'The rep ends when your <b>glutes finish, not when your back arches</b>. Ribs down, slight pelvic tuck at the top. Shins vertical, drive through heels.'},
+    {id:'rdl', n:'Romanian deadlift', rx:'3 × 8–12', sets:3, top:12,
+     cue:'<b>Close a car door behind you with your butt.</b> Hinge, don’t squat — knees keep the same soft bend. Stop at a strong hamstring stretch.'},
+    {id:'lunge', n:'Walking lunges', rx:'3 × 10 per leg', sets:3, top:0,
+     cue:'<b>Long strides + slight forward lean = glutes.</b> Short strides = quads. Push through the front heel.'},
+    {id:'kickback', n:'Cable or band kickbacks', rx:'2 × 12–15 per leg', sets:2, top:15,
+     cue:'<b>The leg is a lever; the glute does the kicking.</b> If your lower back arches, you kicked too high.'},
+    {id:'deadbugA', n:'Dead bug (slow, 3 s lower)', rx:'3 × 10 per side', sets:3, top:0,
+     cue:'Lower back pressed into the floor the entire rep.'}
+  ]},
+  B:{name:'Day B — Upper Focus', tag:'press + pull', ex:[
+    {id:'bench', n:'Dumbbell bench press', rx:'4 × 6–10', sets:4, top:10,
+     cue:'<b>Bend the bar in half; elbows at 45°, not chicken wings.</b> Stop one rep before grinding — no spotter.'},
+    {id:'row1', n:'One-arm dumbbell row', rx:'4 × 8–12', sets:4, top:12,
+     cue:'<b>Row to your hip pocket</b>, start the pull with the shoulder blade, no torso twist.'},
+    {id:'ohp', n:'Seated dumbbell shoulder press', rx:'3 × 8–12', sets:3, top:12,
+     cue:'<b>Ribs down.</b> If your lower back arches off the bench, the weight is too heavy and your waist goal is paying for it.'},
+    {id:'pulldown', n:'Lat pulldown or pull-ups', rx:'3 × 8–12', sets:3, top:12,
+     cue:'<b>Elbows to your back pockets.</b> Forearms burning + back not = pulling with your hands. Pull-ups get easy around 165.'},
+    {id:'curl', n:'Dumbbell curls', rx:'2 × 12', sets:2, top:12,
+     cue:'Elbows pinned to ribs — <b>if they drift forward it’s a front raise, not a curl.</b>'},
+    {id:'tri', n:'Overhead triceps extension', rx:'2 × 12', sets:2, top:12,
+     cue:'<b>Elbows point at the ceiling and stay there.</b>'},
+    {id:'vacB', n:'Stomach vacuums', rx:'3 × 20–30 s', sets:3, top:0, unit:'s',
+     cue:'Longer holds today. Best on an empty-ish stomach — post-workout slot works.'}
+  ]},
+  C:{name:'Day C — Full Body + Glute Volume', tag:'round two', ex:[
+    {id:'bss', n:'Bulgarian split squat', rx:'3 × 8–10 per leg', sets:3, top:10,
+     cue:'<b>The front leg does all the work; the back leg is a kickstand.</b> Hinge slightly forward for glute bias. Railroad tracks, not tightrope.'},
+    {id:'trapdl', n:'Trap bar or sumo deadlift', rx:'3 × 6–8', sets:3, top:8,
+     cue:'<b>Arms are ropes.</b> Take the slack out, brace like someone’s about to poke your stomach, push the floor away. Film this one weekly.'},
+    {id:'incline', n:'Incline dumbbell press', rx:'3 × 8–12', sets:3, top:12,
+     cue:'30° incline. Same 45° elbow rule, same stop-before-grinding rule.'},
+    {id:'row2', n:'Cable or dumbbell row', rx:'3 × 10–12', sets:3, top:12,
+     cue:'Chest tall, <b>shoulder blades start the pull</b>, control the return.'},
+    {id:'abd', n:'Seated or banded hip abductions', rx:'3 × 15–20', sets:3, top:20,
+     cue:'<b>Pause 1 s at the widest point — the last 2 inches build the upper-glute shelf.</b> Lean slightly forward.'},
+    {id:'kneeraise', n:'Hanging knee raises', rx:'3 × 10–15', sets:3, top:15,
+     cue:'<b>Tuck the pelvis like a scared dog tucking its tail.</b> Kill the swing between reps. Too hard? Reverse crunches, same pattern.'}
+  ]}
+};
+const TEMPLATE={ // 0=Sun · kind drives the weather swaps
+  1:{am:{t:'Strength A — glutes + lower',tab:'train',k:'A',kind:'indoor'}, pm:{t:'Walk 35–45 min',kind:'walk',d:'After 8 PM or indoors. A dusk dog walk counts fully.'}},
+  2:{am:{t:'Easy run — done before 8:00 AM',tab:'run',kind:'run'}, pm:{t:'Yoga flow 20 min',kind:'indoor',d:'Post-run hips: downward dog, low lunge, half pigeon, lizard, forward fold.'}},
+  3:{am:{t:'Strength B — upper focus',tab:'train',k:'B',kind:'indoor'}, pm:{t:'Walk 35–45 min',kind:'walk',d:'After 8 PM or indoors.'}},
+  4:{am:{t:'Run — before 8:00 AM',tab:'run',kind:'run'}, pm:{t:'Mat Pilates 20–25 min',kind:'indoor',d:'The hundred, single/double-leg stretch, criss-cross, side kick series, shoulder bridge, swimming, child’s pose. Exhale on effort, ribs down.'}},
+  5:{am:{t:'Strength C — full body + glute volume',tab:'train',k:'C',kind:'indoor'}, pm:{t:'Walk 35–45 min',kind:'walk',d:'After 8 PM or indoors.'}},
+  6:{am:{t:'Yoga 30–45 min',kind:'indoor',d:'The real practice — follow a video or class (Yoga With Adriene works). Alternate weeks: longer mat Pilates. Prioritize pigeon, lizard, bridge, boat, side plank.'}, pm:{t:'Optional easy walk',kind:'walk',d:'Zero pressure. Sunday batch cook is tomorrow.'}},
+  0:{am:{t:'Rest',d:'Full rest day. Primer still happens — it’s activation, not training.'}, pm:{t:'Easy walk only if you feel like it',kind:'walk',d:'Batch cook for the week: chicken + rice + roasted vegetables = zero-decision lunches Mon–Fri. Boil 6 eggs.'}}
+};
+/* weather adjustments — auto from the Durham forecast when the host allows fetch,
+   manual chips as override/fallback. Resets to auto each day. */
+const WX_OPTS=[{v:'auto',l:'Auto'},{v:'clear',l:'Clear'},{v:'rain',l:'Rain'},{v:'heat90',l:'HI 90+'},{v:'heat100',l:'HI 100+'}];
+const WX_URL='https://api.open-meteo.com/v1/forecast?latitude=35.994&longitude=-78.8986&hourly=apparent_temperature,precipitation_probability&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1';
+let wxFetchFailed=false;
+function wxMode(){ return (state.wx && state.wx.d===todayISO()) ? state.wx.v : 'auto'; }
+function wxFresh(){ return state.wxData && state.wxData.day===todayISO() && (Date.now()-state.wxData.t)<60*60*1000; }
+function fetchWX(){
+  if(wxFresh()||wxFetchFailed) return Promise.resolve(false);
+  return fetch(WX_URL).then(r=>r.json()).then(j=>{
+    state.wxData={t:Date.now(), day:todayISO(), feels:j.hourly.apparent_temperature, rain:j.hourly.precipitation_probability};
+    save(); return true;
+  }).catch(()=>{ wxFetchFailed=true; return false; });
+}
+function slotCond(slot){ // slot 'am' = the pre-8AM window, 'pm' = the post-8PM window
+  const d=state.wxData; if(!d||d.day!==todayISO()) return null;
+  const hrs = slot==='am' ? [6,7] : [20,21];
+  const feels=Math.max(...hrs.map(h=>d.feels[h]??-99));
+  const rain=Math.max(...hrs.map(h=>d.rain[h]??0));
+  const cond = rain>=50 ? 'rain' : feels>=100 ? 'heat100' : feels>=90 ? 'heat90' : 'clear';
+  return {feels:Math.round(feels), rain, cond};
+}
+function wxAdjust(kind, slot){
+  if(!kind||kind==='indoor'||kind==='rest') return '';
+  const mode=wxMode();
+  let cond=mode, why='';
+  if(mode==='auto'){
+    const c=slotCond(slot); if(!c) return '';
+    cond=c.cond; why=` Forecast for the ${slot==='am'?'run window':'evening'}: feels like ${c.feels}°, ${c.rain}% chance of rain.`;
+  }
+  if(cond==='clear') return '';
+  let msg='';
+  if(kind==='walk'){
+    if(cond==='rain')    msg='Rain — take it inside: 35 min on the treadmill at a 5–10% incline with a podcast does the exact same job.';
+    if(cond==='heat90')  msg='Heat index 90+ — hold the walk until after 8 PM, keep it easy, bring water. Treadmill at incline is a full substitute.';
+    if(cond==='heat100') msg='Heat index 100+ — treadmill, 35 min at 5–10% incline. Don’t negotiate with this one.';
+  }
+  if(kind==='run'){
+    if(cond==='rain')    msg='Rain — community gym treadmill at 1% incline, exact same session.';
+    if(cond==='heat90')  msg='Heat index 90+ — slow 30–60 s per mile or cut the run short. 16 oz water beforehand still applies.';
+    if(cond==='heat100') msg='Heat index 100+ — treadmill at 1% incline, full stop. That’s the protocol, not a cop-out.';
+  }
+  return msg?msg+why:'';
+}
+function runRx(w){
+  if(w<=2)  return {tue:'25 min total — run 2 min / walk 1 min, repeat', thu:'25 min total — run 2 min / walk 1 min, repeat', phase:'Weeks 1–2 · run/walk base'};
+  if(w<=4)  return {tue:'30 min total — run 4 min / walk 1 min', thu:'30 min total — run 4 min / walk 1 min', phase:'Weeks 3–4 · run/walk builds'};
+  if(w<=8)  return {tue:'30 min continuous, conversational pace', thu:'Quality: 10 min easy · 6 × 1 min hard / 2 min walk · 5 min cooldown', phase:'Weeks 5–8 · continuous + quality'};
+  if(w<=12) return {tue:'40 min easy', thu:'8 × 1 min hard / 2 min walk — or 20 min tempo, comfortably hard', phase:'Weeks 9–12 · building volume'};
+  return {tue:'35–45 min easy', thu:'Quality: intervals or tempo', sat:'Optional easy 30 min if you want a third run', phase:'Month 4+ · eyeing a Triangle 10K in November'};
+}
+const GROCERY=[
+  {cat:'Proteins · ~$45', items:[
+    {id:'chix',n:'Chicken breast (or thighs on sale)',q:'4 lbs',p:11},
+    {id:'eggs',n:'Eggs',q:'2 dozen',p:8},
+    {id:'yog',n:'Nonfat plain Greek yogurt',q:'2 × 32 oz',p:10},
+    {id:'cc',n:'Cottage cheese, 4% or 2%',q:'24 oz',p:4},
+    {id:'tuna',n:'Canned tuna or salmon',q:'4–5 cans',p:5},
+    {id:'turkey',n:'Lean ground turkey or 93/7 beef',q:'1 lb',p:6}]},
+  {cat:'Carbs · ~$18', items:[
+    {id:'rice',n:'Rice, 5 lb bag',q:'lasts 2–3 wks',p:6},
+    {id:'oats',n:'Old-fashioned oats, large canister',q:'lasts 2 wks',p:4},
+    {id:'pot',n:'Russet or sweet potatoes',q:'5 lb bag',p:4},
+    {id:'bread',n:'Sourdough or whole grain bread',q:'1 loaf',p:4}]},
+  {cat:'Produce + Fat · ~$22', items:[
+    {id:'frveg',n:'Frozen vegetables (broccoli, peppers, green beans)',q:'4 bags',p:8},
+    {id:'frber',n:'Frozen berries',q:'1 large bag',p:8},
+    {id:'ban',n:'Bananas',q:'1 bunch',p:2},
+    {id:'onion',n:'Onions + garlic',q:'',p:3},
+    {id:'lemon',n:'Lemons or limes',q:'3',p:2}]}
+];
+const DINNERS=[
+  {n:'Sheet Pan Anything',d:'8 oz protein + potato wedges + frozen vegetables, one pan at 425°F. Potatoes get a 15-minute head start (paprika-garlic on them is elite), protein joins for the final 20.'},
+  {n:'Ground Turkey Rice Bowl',d:'Brown 8 oz turkey with onion, garlic, cumin, chili powder, splash of water. Over 1 cup rice with salsa, hot sauce, squeeze of lime. Taco flavor, no taco-kit sugar.'},
+  {n:'Tuna or Salmon Cakes',d:'2 cans drained + 1 egg + 2 tbsp oats as binder, pan-seared in a teaspoon of oil. Potatoes and green beans on the side. Cheapest dinner here — about $2.50.'},
+  {n:'Soy-Garlic Chicken + Vegetables',d:'8 oz chicken sliced thin, seared hard; sauce of 2 tbsp soy, 1 tbsp vinegar, garlic, ladle of water reduced around it. Over rice. Takeout flavor, none of the syrup.'},
+  {n:'The Big Egg Dinner',d:'The "nothing’s thawed" backup: 4-egg scramble, sourdough toast, fruit. Exists so a chaotic day never becomes a delivery order.'}
+];
+const BREAKFASTS=[
+  {n:'The Power Bowl · 2 min',d:'1.5 cups Greek yogurt + 1 scoop whey stirred in, 1 cup frozen berries microwaved 45 s so they sauce themselves, 2 tbsp oats for crunch.'},
+  {n:'The Scramble · 8 min',d:'3 whole eggs + 3 whites, frozen peppers and onions, hot sauce, 1 slice sourdough.'},
+  {n:'Protein Oats · 5 min',d:'½ cup oats microwaved with water, whey stirred in after cooking (not before — gluey), half a banana, salt and cinnamon.'}
+];
+const AFTERNOON=['Whey shake with a banana','Cottage cheese + berries + black pepper (trust the pepper)','Two hard-boiled eggs + a piece of fruit','Half a can of tuna with mustard on crackers or toast'];
+
+/* ---------------- tabs ---------------- */
+const tabsEl=document.getElementById('tabs');
+tabsEl.addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  showTab(b.dataset.tab);
+});
+function showTab(id){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===id));
+  document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='tab-'+id));
+  if(id==='trend') drawChart();
+  window.scrollTo({top:0});
+}
+
+/* ---------------- header ---------------- */
+function renderHeader(){
+  const w=weekNum();
+  document.getElementById('weekchip').innerHTML= w<1
+    ? `<b>Starts ${fmtShort(state.start)}</b><button id="editstart">edit</button>`
+    : `<b>Week ${w}</b> · started ${fmtShort(state.start)}<button id="editstart">edit</button>`;
+  document.getElementById('editstart').onclick=()=>{
+    const dlg=document.getElementById('startdlg');
+    document.getElementById('startinput').value=state.start;
+    dlg.showModal();
+  };
+}
+document.getElementById('startcancel').onclick=()=>document.getElementById('startdlg').close();
+document.getElementById('startsave').onclick=()=>{
+  const v=document.getElementById('startinput').value;
+  if(v){ state.start=v; save(); renderAll(); }
+  document.getElementById('startdlg').close();
+};
+
+/* ---------------- TODAY ---------------- */
+function sessionCard(slot,info,daykey){
+  const done=(state.done[todayISO()]||{})[slot];
+  const label=slot==='am'?'AM · hard':'PM · easy';
+  let extra='';
+  if(info.tab==='run'){
+    const rx=runRx(weekNum());
+    extra=`<p class="cue">${DOW===2?rx.tue:rx.thu}</p><p class="fine">Heat index over 90 → slow 30–60 s/mi or cut short. Over 100 → treadmill, 1% incline. 16 oz water 60–90 min before.</p>`;
+  }
+  if(info.d) extra+=`<p class="sub">${info.d}</p>`;
+  const adj=wxAdjust(info.kind, slot);
+  if(adj) extra+=`<div class="callout warn" style="margin:10px 0 0"><b>Weather call:</b> ${adj}</div>`;
+  const rest = info.t==='Rest';
+  return `<div class="card"><label class="check ${done?'donetext':''}" style="border:none;padding:0">
+    ${rest?'':`<input type="checkbox" data-done="${slot}" ${done?'checked':''} aria-label="mark ${slot} done">`}
+    <div class="grow"><span class="pill ${slot==='am'&&!rest?'am':''}">${rest?'Rest day':label}</span>
+    <div class="t" style="margin-top:6px">${info.t}</div>${extra}
+    ${info.tab?`<button class="btn ghost" style="margin-top:10px" data-go="${info.tab}" data-day="${daykey||''}">Open ${info.tab==='train'?'workout':'run plan'} →</button>`:''}
+    </div></label></div>`;
+}
+function renderToday(){
+  const w=weekNum(), t=TEMPLATE[DOW], iso=todayISO();
+  const dayName=new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  if(w<1){
+    const n=daysUntilStart();
+    const startDow=parseISO(state.start).getDay();
+    const first=TEMPLATE[startDow].am;
+    document.getElementById('tab-today').innerHTML=`
+      <h2 style="margin-top:18px">${dayName}</h2>
+      <div class="card">
+        <span class="pill hint">${n===1?'Starts tomorrow morning':'Starts in '+n+' days'}</span>
+        <h3 style="margin-top:8px">Day 1: ${first.t}</h3>
+        <p class="sub">Week 1 begins ${fmtShort(state.start)}. Nothing to train today — set yourself up instead.</p>
+      </div>
+      <h2>Tonight’s setup</h2>
+      <div class="card">
+        <ul class="tight">
+          <li><b>Batch cook:</b> chicken + rice + roasted vegetables = zero-decision lunches Mon–Fri. Boil 6 eggs.</li>
+          <li><b>Groceries in?</b> The weekly list is in Shop.</li>
+          <li><b>Lay out gym clothes</b> — the scheduled workout you do beats the perfect workout you skip.</li>
+          <li><b>Log a starting weigh-in</b> in Trend so the chart has its 180 anchor.</li>
+          <li>Runs happen before 8:00 AM in this heat — set the alarm accordingly.</li>
+        </ul>
+      </div>
+      <h2>While you wait</h2>
+      <div class="card">
+        <p class="sub" style="margin-top:0">The 6-minute primer is fair game starting tomorrow — it runs every single day, including rest days. Weeks 1–2 are deliberately easy: 3–4 reps in the tank, learning patterns, no pace-chasing. The soreness from split squats and RDLs will be plenty without maximal loads.</p>
+      </div>`;
+    return;
+  }
+  const pr=state.primer[iso]||[false,false,false,false];
+  const prDone=pr.filter(Boolean).length;
+  const phase = w<=2 ? `<div class="callout">Weeks 1–2: everything at 3–4 reps in the tank. You’re greasing the groove, not testing yourself. Expect 3–5 lbs down — mostly water, don’t extrapolate it.</div>`
+    : (w>=6&&w<=7)||(w>=13&&w<=14) ? `<div class="callout warn">Diet-break decision point: if two of the warning signs are showing (lifts regressing, 3 AM wakeups, irritability, cold hands, dead-leg runs), take a week at ~2,400 maintenance.</div>`
+    : '';
+  const wx=wxMode();
+  let wxline='';
+  if(wx==='auto'){
+    const am=slotCond('am'), pm=slotCond('pm');
+    if(am&&pm) wxline=`Durham forecast — run window: feels like ${am.feels}°, ${am.rain}% rain · evening: feels like ${pm.feels}°, ${pm.rain}% rain. Sessions below adjust automatically.`;
+    else if(wxFetchFailed) wxline='Live forecast unavailable here — tap a condition to set it manually.';
+    else wxline='Checking the Durham forecast…';
+  } else wxline='Manual override for today — flips back to Auto at midnight.';
+  document.getElementById('tab-today').innerHTML=`
+    <h2 style="margin-top:18px">${dayName} · Week ${w}</h2>
+    ${phase}
+    <div class="card" style="padding:12px 16px">
+      <div class="rowline" style="align-items:center;flex-wrap:wrap;gap:8px">
+        <span class="fine" style="flex:none">Weather:</span>
+        <div class="seg" style="margin:0;flex:1;min-width:260px">
+          ${WX_OPTS.map(o=>`<button data-wx="${o.v}" class="${wx===o.v?'on':''}" style="padding:7px 4px;font-size:12.5px">${o.l}</button>`).join('')}
+        </div>
+      </div>
+      <p class="fine" style="margin:8px 0 0">${wxline}</p>
+    </div>
+    ${sessionCard('am',t.am,t.am.k)}
+    ${sessionCard('pm',t.pm)}
+    <h2>Daily primer · 6 min · ${prDone}/4</h2>
+    <div class="card">
+      <p class="fine" style="margin-top:0">Every day including Sunday. Before the AM session, or attached to the front of the PM walk. Activation, not training.</p>
+      ${PRIMER.map((p,i)=>`<label class="check ${pr[i]?'donetext':''}"><input type="checkbox" data-primer="${i}" ${pr[i]?'checked':''}>
+        <div><div class="t">${p.t}</div><div class="d">${p.d}</div></div></label>`).join('')}
+    </div>
+    <h2>Fuel today</h2>
+    <div class="card">
+      <div class="macros">
+        <div class="macro"><div class="v">1,900–2,000</div><div class="l">calories</div></div>
+        <div class="macro"><div class="v">175–185 g</div><div class="l">protein</div><div class="n">the number that matters</div></div>
+        <div class="macro"><div class="v">55–65 g</div><div class="l">fat</div><div class="n">floor, not ceiling</div></div>
+        <div class="macro"><div class="v">1 gal</div><div class="l">water</div><div class="n">Durham summer minimum</div></div>
+      </div>
+      <p class="fine">Four feedings, 40–45 g protein each: breakfast ~450 · lunch box ~500 · afternoon ~300 · dinner ~650. Details in Eat.</p>
+    </div>`;
+  if(wx==='auto' && !wxFresh() && !wxFetchFailed) fetchWX().then(()=>renderToday());
+}
+
+/* ---------------- TRAIN ---------------- */
+let currentDay = ({1:'A',3:'B',5:'C'})[DOW] || 'A';
+function lastLog(exId){
+  const arr=(state.logs[exId]||[]).filter(e=>e.d!==todayISO());
+  return arr.length?arr[arr.length-1]:null;
+}
+function todayLog(exId){
+  const arr=state.logs[exId]||[];
+  return arr.find(e=>e.d===todayISO())||null;
+}
+function renderTrain(){
+  const W=WORKOUTS[currentDay], wk=weekNum();
+  const rir = wk<=2 ? 'Weeks 1–2: leave 3–4 reps in the tank on everything.' : '1–2 reps in reserve on the final set. Hit the top of the range on all sets → add weight next session.';
+  document.getElementById('tab-train').innerHTML=`
+    <div class="seg" style="margin-top:16px">
+      ${['A','B','C'].map(k=>`<button data-dayk="${k}" class="${k===currentDay?'on':''}">${k}<small>${{A:'Mon · glutes',B:'Wed · upper',C:'Fri · full body'}[k]}</small></button>`).join('')}
+    </div>
+    <div class="card">
+      <h3>${W.name}</h3>
+      <p class="fine" style="margin:2px 0 0">${rir} Rest 90 s–2 min on compounds, 60–90 s accessories. Brace every rep: ribs down, navel in, exhale on effort.</p>
+    </div>
+    <div class="card">
+      ${W.ex.map(ex=>{
+        const prev=lastLog(ex.id), cur=todayLog(ex.id);
+        const unit=ex.unit||'lb';
+        const hitTop = prev && ex.top>0 && prev.s.length>=ex.sets && prev.s.every(s=>+s.r>=ex.top);
+        const prevTxt = prev ? 'Last ('+fmtShort(prev.d)+'): '+prev.s.map(s=>(s.w!==''&&s.w!=null?s.w+'×':'')+s.r).join(', ') : 'No log yet';
+        let sets='';
+        for(let i=0;i<ex.sets;i++){
+          const sv=cur&&cur.s[i]?cur.s[i]:{w:'',r:''};
+          sets+=`<span class="set">
+            ${ex.unit==='s'?'':`<input type="number" inputmode="decimal" placeholder="${unit}" value="${sv.w??''}" data-ex="${ex.id}" data-set="${i}" data-f="w" aria-label="${ex.n} set ${i+1} weight">
+            <span class="x">×</span>`}
+            <input type="number" inputmode="numeric" placeholder="${ex.unit==='s'?'sec':'reps'}" value="${sv.r??''}" data-ex="${ex.id}" data-set="${i}" data-f="r" aria-label="${ex.n} set ${i+1} ${ex.unit==='s'?'seconds':'reps'}">
+          </span>`;
+        }
+        return `<div class="ex">
+          <div class="top"><span class="nm">${ex.n}</span><span class="rx">${ex.rx}</span></div>
+          <p class="cue">${ex.cue}</p>
+          <div class="last">${prevTxt} ${hitTop?'<span class="pill hint">add weight today</span>':''}</div>
+          <div class="sets">${sets}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="card">
+      <h3>Waist rules, always</h3>
+      <ul class="tight">
+        <li>No weighted side bends, twists or loaded oblique work — ever. Grown obliques widen the waist.</li>
+        <li>Every braced set is corset training. That’s why waist work is "every day."</li>
+        <li>Feel test: if a glute exercise burns quads or lower back, check stride length, torso lean or back arch.</li>
+      </ul>
+    </div>`;
+}
+function saveSet(exId, idx, field, val){
+  let arr=state.logs[exId]||(state.logs[exId]=[]);
+  let entry=arr.find(e=>e.d===todayISO());
+  if(!entry){ entry={d:todayISO(),s:[]}; arr.push(entry); }
+  while(entry.s.length<=idx) entry.s.push({w:'',r:''});
+  entry.s[idx][field]=val;
+  if(entry.s.every(s=>s.w===''&&s.r==='')) arr.splice(arr.indexOf(entry),1);
+  save();
+}
+
+/* ---------------- RUN ---------------- */
+function renderRun(){
+  const w=weekNum(), rx=runRx(w);
+  const phases=[
+    {r:'Weeks 1–2',d:'25 min total. Run 2 min, walk 1 min, repeat. Both weekly runs.',a:w<=2},
+    {r:'Weeks 3–4',d:'30 min total. Run 4 min, walk 1 min.',a:w>=3&&w<=4},
+    {r:'Weeks 5–8',d:'Tuesday: 30 min continuous easy (full-sentence pace). Thursday: 10 min easy, 6 × 1 min hard / 2 min walk, 5 min cooldown.',a:w>=5&&w<=8},
+    {r:'Weeks 9–12',d:'Tuesday builds to 40 min easy. Thursday: 8 × 1 min, or a 20 min tempo effort.',a:w>=9&&w<=12},
+    {r:'Month 4+',d:'35–45 min easy Tuesday, quality Thursday, optional easy 30 Saturday. Heat breaks, paces drop. Target a Triangle-area 10K in November.',a:w>=13}
+  ];
+  document.getElementById('tab-run').innerHTML=`
+    <h2 style="margin-top:18px">This week · ${rx.phase}</h2>
+    <div class="card weekhl">
+      <table class="plain">
+        <tr><td style="width:90px"><b>Tuesday</b></td><td>${rx.tue}</td></tr>
+        <tr><td><b>Thursday</b></td><td>${rx.thu}</td></tr>
+        ${rx.sat?`<tr><td><b>Saturday</b></td><td>${rx.sat}</td></tr>`:''}
+      </table>
+    </div>
+    <h2>Full progression</h2>
+    <div class="card">
+      ${phases.map(p=>`<div class="ex" ${p.a?'style="background:var(--accent-soft);margin:0 -16px;padding:14px 16px;border-radius:8px"':''}>
+        <div class="top"><span class="nm">${p.r}${p.a?' <span class="pill hint">now</span>':''}</span></div>
+        <p class="sub" style="margin-top:4px">${p.d}</p></div>`).join('')}
+      <p class="fine">Run/walk is not remedial — it’s how the aerobic base gets built without wrecking your knees carrying 180.</p>
+    </div>
+    <h2>Durham heat protocol · Jul–Sep</h2>
+    <div class="card">
+      <ul class="tight">
+        <li><b>Before 8:00 AM, full stop.</b> Heat index hits 100+ by 10 AM and humidity kills evaporative cooling.</li>
+        <li>Check the <b>heat index</b>, not the temperature. Over 90: slow 30–60 s per mile or cut the run short. Over 100: community gym treadmill at 1% incline.</li>
+        <li>Expect paces 30–90 s per mile slower than fall. That’s physiology, not fitness. No pace-chasing until October.</li>
+        <li>16 oz water 60–90 min pre-run. Over 40 min, add electrolytes.</li>
+        <li>Acclimation takes ~2 weeks of consistent exposure. The first two weeks feel disproportionately hard. Normal.</li>
+      </ul>
+    </div>
+    <div class="callout crit">Recovery guardrail: resting heart rate trending up, sleep degrading, or lifts going backward two sessions in a row → drop the PM sessions for 3–4 days. At this deficit you have less margin than usual.</div>
+    <div class="callout">The two rules that matter most: the scheduled workout you do beats the perfect workout you skip — and do not run hard and lift hard in month one. Easy runs stay easy.</div>`;
+}
+
+/* ---------------- EAT ---------------- */
+function renderEat(){
+  document.getElementById('tab-eat').innerHTML=`
+    <h2 style="margin-top:18px">Daily targets</h2>
+    <div class="card">
+      <div class="macros">
+        <div class="macro"><div class="v">1,900–2,000</div><div class="l">calories</div><div class="n">hard floor 1,800</div></div>
+        <div class="macro"><div class="v">175–185 g</div><div class="l">protein</div><div class="n">highest priority</div></div>
+        <div class="macro"><div class="v">55–65 g</div><div class="l">fat</div><div class="n">below 50 g hormones suffer</div></div>
+        <div class="macro"><div class="v">160–180 g</div><div class="l">carbs</div><div class="n">around training</div></div>
+      </div>
+      <p class="fine">Every 6–8 weeks: one week at ~2,400 maintenance. The scale blip is water, not fat. Losing under 1.25 lbs/wk for two weeks → cut 100 cal or add 10 min to walks. Over 2.25 → add 100–150 back.</p>
+    </div>
+    <h2>Breakfast · ~450 cal · 42–48 g protein</h2>
+    <div class="card">${BREAKFASTS.map(b=>`<div class="ex"><div class="nm">${b.n}</div><p class="sub">${b.d}</p></div>`).join('')}</div>
+    <h2>Lunch · ~500 cal · 45 g protein</h2>
+    <div class="card"><div class="nm" style="font-weight:700">The batch cook boxes</div>
+      <p class="sub">8 oz chicken over 1 cup cooked rice with roasted vegetables and a drizzle of olive oil. Cook Sunday — zero-decision fuel on busy days, about $3 a serving.</p></div>
+    <h2>Afternoon · ~300 cal · 30–35 g protein</h2>
+    <div class="card"><ul class="tight">${AFTERNOON.map(a=>`<li>${a}</li>`).join('')}</ul>
+      <p class="fine">This slot kills the 4:00 PM pantry raid.</p></div>
+    <h2>Dinner · ~650 cal · 48–52 g protein · all under 30 min</h2>
+    <div class="card">${DINNERS.map(d=>`<div class="ex"><div class="nm">${d.n}</div><p class="sub">${d.d}</p></div>`).join('')}
+      <p class="fine">The real meal of the day, cooked well. Weigh the protein, go light on butter and oil — fats are where 400 calories hide invisibly.</p></div>
+    <h2>The flavor arsenal</h2>
+    <div class="card">
+      <p class="sub" style="margin-top:0">Acid + salt + heat + char replaces sugar. Lemon or vinegar at the end of everything. Hot sauce is a free-calorie flavor cannon. Char vegetables harder than feels right — the browning is the sweetness. Cinnamon and vanilla make breakfast read sweet.</p>
+      <p class="sub">Salsa and mustard are almost always clean; ketchup and BBQ almost never are. Plain yogurt only — flavored tubs carry 12–18 g sugar per serving.</p>
+      <p class="sub"><b>House dessert:</b> frozen berries microwaved into a warm compote over plain Greek yogurt. It will genuinely surprise you.</p>
+    </div>
+    <div class="callout">Whole fruit stays, 2–3 servings daily — the deficit needs the volume and the runs need the carbs. Juice is out.</div>
+    <div class="callout warn">Alcohol: zero through the cut. That’s 600–1,000 weekly calories gone and better sleep. Tastings and work dinners: taste and spit. Reintroduce deliberately at maintenance around November — a great bottle can celebrate the 160.</div>`;
+}
+
+/* ---------------- SHOP ---------------- */
+function renderShop(){
+  const total=GROCERY.reduce((a,c)=>a+c.items.reduce((b,i)=>b+i.p,0),0);
+  const got=GROCERY.reduce((a,c)=>a+c.items.filter(i=>state.grocery.checked[i.id]).length,0);
+  const count=GROCERY.reduce((a,c)=>a+c.items.length,0);
+  document.getElementById('tab-shop').innerHTML=`
+    <div class="card" style="margin-top:18px">
+      <div class="grochead"><h3 style="margin:0">Weekly list · ~$${total}–100</h3>
+        <button class="btn ghost" id="resetgro">New week</button></div>
+      <p class="fine" style="margin-bottom:0">${got}/${count} in the cart. Aldi or Lidl cuts this 20% versus Harris Teeter; Costco for chicken and eggs if you have a membership.</p>
+    </div>
+    ${GROCERY.map(c=>`<div class="card"><h3>${c.cat}</h3>
+      ${c.items.map(i=>`<label class="groitem ${state.grocery.checked[i.id]?'got':''}">
+        <input type="checkbox" data-gro="${i.id}" ${state.grocery.checked[i.id]?'checked':''}>
+        <span class="n">${i.n}</span><span class="q">${i.q}</span><span class="p">$${i.p}</span></label>`).join('')}
+    </div>`).join('')}
+    <div class="card"><h3>Pantry · buy once, lasts a month+</h3>
+      <p class="sub">Olive oil, kosher salt, pepper, garlic powder, smoked paprika, cumin, chili powder, Italian herbs, curry powder, hot sauce (Frank’s or Cholula — check the label), yellow mustard, low-sodium soy sauce, salsa, white vinegar.</p>
+      <p class="sub"><b>Whey protein:</b> a 5 lb tub runs $55–65 and lasts 2 months — about $8/week amortized, still the cheapest protein per gram after eggs.</p>
+    </div>
+    <div class="callout">Two labels to read: yogurt and sauces. Plain yogurt only; BBQ, ketchup, teriyaki and most dressings are sugar delivery systems.</div>`;
+  document.getElementById('resetgro').onclick=()=>{ state.grocery.checked={}; save(); renderShop(); };
+}
+
+/* ---------------- TREND ---------------- */
+function avgWindow(days, endOffset){
+  const now=parseISO(todayISO()).getTime();
+  const from=now-(endOffset+days)*864e5, to=now-endOffset*864e5;
+  const pts=state.weights.filter(p=>{const t=parseISO(p.d).getTime(); return t>from&&t<=to;});
+  if(!pts.length) return null;
+  return pts.reduce((a,p)=>a+p.w,0)/pts.length;
+}
+function renderTrend(){
+  const ws=[...state.weights].sort((a,b)=>a.d<b.d?-1:1);
+  const latest=ws.length?ws[ws.length-1]:null;
+  const a7=avgWindow(7,0), a7prev=avgWindow(7,7);
+  const rate=(a7!=null&&a7prev!=null)?(a7prev-a7):null;
+  const w=weekNum();
+  let advice='', cls='rate-good';
+  if(rate==null) advice='Weigh in most mornings; the 7-day average is the only number worth judging.';
+  else if(w<=2){ advice=`Losing ${rate.toFixed(1)} lbs/wk. Weeks 1–2 are water and glycogen — enjoy it, don’t extrapolate it.`; }
+  else if(rate<1.25){ cls='rate-warn'; advice=`7-day average is down ${rate.toFixed(1)} lbs/wk — under the 1.5–2 target. If this holds two straight weeks: cut 100 calories or add 10 minutes to the walks. Hard floor is 1,800 — below that the fix is more walking or a diet break, never less food.`; }
+  else if(rate>2.25){ cls='rate-crit'; advice=`Down ${rate.toFixed(1)} lbs/wk — too fast, you’re burning muscle. Add 100–150 calories back.`; }
+  else advice=`Down ${rate.toFixed(1)} lbs/wk — right in the 1.5–2 pocket. Change nothing.`;
+  document.getElementById('tab-trend').innerHTML=`
+    <h2 style="margin-top:18px">Log a weigh-in</h2>
+    <div class="card">
+      <div class="weightform">
+        <input type="number" id="wval" inputmode="decimal" step="0.1" placeholder="180.0" aria-label="weight in pounds">
+        <input type="date" id="wdate" value="${todayISO()}" aria-label="weigh-in date">
+        <button class="btn" id="wadd">Log</button>
+      </div>
+      <div class="stat3">
+        <div class="macro"><div class="v">${latest?latest.w.toFixed(1):'—'}</div><div class="l">latest</div><div class="n">${latest?fmtShort(latest.d):''}</div></div>
+        <div class="macro"><div class="v">${a7!=null?a7.toFixed(1):'—'}</div><div class="l">7-day avg</div></div>
+        <div class="macro"><div class="v ${cls}">${rate!=null?(rate>=0?'−':'+')+Math.abs(rate).toFixed(1):'—'}</div><div class="l">lbs / week</div><div class="n">target 1.5–2</div></div>
+      </div>
+      <p class="sub ${cls}" style="margin-top:10px">${advice}</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:10px">180 → the 155–162 window</h3>
+      <div class="chartbox" id="chartbox"><div class="tip" id="tip"></div></div>
+    </div>
+    <h2>Checkpoints</h2>
+    <div class="card scrollx">
+      <table class="plain">
+        <tr><th>When</th><th>Expect</th></tr>
+        <tr><td class="num"><b>Week 2</b></td><td>3–5 lbs down (water-heavy, expected). Training rhythm established.</td></tr>
+        <tr><td class="num"><b>Week 6</b></td><td>9–11 down, around 169–171. Running 30 min continuous. First diet-break decision point.</td></tr>
+        <tr><td class="num"><b>Week 10</b></td><td>13–16 down, mid 160s. Recalculate calories for the lighter body.</td></tr>
+        <tr><td class="num"><b>Weeks 14–18</b></td><td>Landing 155–162. Transition to ~2,300–2,400 maintenance, keep the training. The last 5 lbs move slower than the first 15 — normal, not a stall.</td></tr>
+      </table>
+    </div>
+    <div class="callout crit"><b>Deficit warning signs</b> — any two at once means take the diet break early: lifts regressing a week straight · waking at 3 AM · irritability someone else comments on · constant cold hands · every run feeling like mile 20.</div>
+    ${ws.length?`<h2>Entries</h2><div class="card scrollx"><table class="plain"><tr><th>Date</th><th>lbs</th><th></th></tr>
+      ${[...ws].reverse().slice(0,14).map(p=>`<tr><td class="num">${fmtShort(p.d)}</td><td class="num">${p.w.toFixed(1)}</td>
+      <td style="text-align:right"><button class="btn ghost" style="padding:4px 10px;font-size:12px" data-del="${p.d}">delete</button></td></tr>`).join('')}
+    </table></div>`:''}`;
+  document.getElementById('wadd').onclick=()=>{
+    const v=parseFloat(document.getElementById('wval').value), d=document.getElementById('wdate').value;
+    if(!v||!d) return;
+    state.weights=state.weights.filter(p=>p.d!==d);
+    state.weights.push({d,w:v}); save(); renderTrend(); drawChart();
+  };
+  document.querySelectorAll('#tab-trend [data-del]').forEach(b=>b.onclick=()=>{
+    state.weights=state.weights.filter(p=>p.d!==b.dataset.del); save(); renderTrend(); drawChart();
+  });
+  drawChart();
+}
+
+/* chart: single series, goal band, hover crosshair */
+function drawChart(){
+  const box=document.getElementById('chartbox'); if(!box) return;
+  const tip=document.getElementById('tip');
+  const ws=[...state.weights].sort((a,b)=>a.d<b.d?-1:1);
+  const W=640,H=280,L=42,R=14,T=16,B=30;
+  if(ws.length<1){
+    box.innerHTML='<div class="tip" id="tip"></div><p class="fine" style="padding:26px 6px;text-align:center">Log your first weigh-in above — the trend, the goal band and the weekly rate all build from it.</p>';
+    return;
+  }
+  const t0=parseISO(ws[0].d).getTime();
+  const t1=Math.max(parseISO(ws[ws.length-1].d).getTime(), t0+14*864e5);
+  const vals=ws.map(p=>p.w);
+  const yMax=Math.max(...vals,181)+1, yMin=Math.min(...vals,155)-2;
+  const X=t=>L+(t-t0)/(t1-t0)*(W-L-R);
+  const Y=v=>T+(yMax-v)/(yMax-yMin)*(H-T-B);
+  let g='';
+  // goal band 155–162
+  g+=`<rect x="${L}" y="${Y(162)}" width="${W-L-R}" height="${Y(155)-Y(162)}" fill="var(--band)"/>`;
+  g+=`<text x="${W-R-4}" y="${Y(162)+13}" text-anchor="end" font-size="10.5" fill="var(--accent)" font-weight="700">GOAL 155–162</text>`;
+  // gridlines every 5
+  for(let v=Math.ceil(yMin/5)*5; v<=yMax; v+=5){
+    g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--grid)" stroke-width="1"/>`;
+    g+=`<text x="${L-6}" y="${Y(v)+3.5}" text-anchor="end" font-size="10.5" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${v}</text>`;
+  }
+  // x ticks: ~4 labels
+  const span=t1-t0, n=Math.min(4,Math.max(1,ws.length));
+  for(let i=0;i<=n;i++){
+    const t=t0+span*i/n, d=new Date(t);
+    g+=`<text x="${X(t)}" y="${H-8}" text-anchor="middle" font-size="10.5" fill="var(--muted)">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}</text>`;
+  }
+  // 180 start reference
+  g+=`<line x1="${L}" x2="${W-R}" y1="${Y(180)}" y2="${Y(180)}" stroke="var(--axis)" stroke-width="1" stroke-dasharray="3 4"/>`;
+  // line + points
+  const pts=ws.map(p=>[X(parseISO(p.d).getTime()),Y(p.w)]);
+  if(pts.length>1) g+=`<path d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  pts.forEach((p,i)=>{ if(i<pts.length-1) g+=`<circle cx="${p[0]}" cy="${p[1]}" r="2.5" fill="var(--series)"/>`; });
+  const lp=pts[pts.length-1];
+  g+=`<circle cx="${lp[0]}" cy="${lp[1]}" r="4.5" fill="var(--series)" stroke="var(--card)" stroke-width="2"/>`;
+  g+=`<text x="${Math.min(lp[0],W-R-30)}" y="${lp[1]-10}" text-anchor="middle" font-size="11.5" font-weight="800" fill="var(--ink)" style="font-variant-numeric:tabular-nums">${ws[ws.length-1].w.toFixed(1)}</text>`;
+  g+=`<line id="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="var(--axis)" stroke-width="1" visibility="hidden"/>`;
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight trend from ${ws[0].w} to ${ws[ws.length-1].w} pounds">${g}</svg><div class="tip" id="tip"></div>`;
+  const svg=box.querySelector('svg'), xh=svg.querySelector('#xh'), tip2=box.querySelector('.tip');
+  function onmove(ev){
+    const r=svg.getBoundingClientRect();
+    const cx=ev.touches?ev.touches[0].clientX:ev.clientX;
+    const mx=(cx-r.left)/r.width*W;
+    let best=0,bd=1e9;
+    pts.forEach((p,i)=>{const d=Math.abs(p[0]-mx); if(d<bd){bd=d;best=i;}});
+    const p=pts[best];
+    xh.setAttribute('x1',p[0]); xh.setAttribute('x2',p[0]); xh.setAttribute('visibility','visible');
+    tip2.style.display='block';
+    tip2.style.left=(p[0]/W*100)+'%';
+    tip2.style.top=(p[1]/H*100)+'%';
+    tip2.textContent=fmtShort(ws[best].d)+' · '+ws[best].w.toFixed(1)+' lb';
+  }
+  svg.addEventListener('mousemove',onmove);
+  svg.addEventListener('touchstart',onmove,{passive:true});
+  svg.addEventListener('touchmove',onmove,{passive:true});
+  svg.addEventListener('mouseleave',()=>{tip2.style.display='none';xh.setAttribute('visibility','hidden');});
+}
+
+/* ---------------- events (delegated) ---------------- */
+document.addEventListener('change',e=>{
+  const t=e.target;
+  if(t.dataset.primer!=null){
+    const iso=todayISO();
+    const pr=state.primer[iso]||(state.primer[iso]=[false,false,false,false]);
+    pr[+t.dataset.primer]=t.checked; save(); renderToday();
+  }
+  if(t.dataset.done){
+    const iso=todayISO();
+    const d=state.done[iso]||(state.done[iso]={});
+    d[t.dataset.done]=t.checked; save(); renderToday();
+  }
+  if(t.dataset.gro){
+    state.grocery.checked[t.dataset.gro]=t.checked; save(); renderShop();
+  }
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.ex) saveSet(t.dataset.ex,+t.dataset.set,t.dataset.f,t.value);
+});
+document.addEventListener('click',e=>{
+  const wxb=e.target.closest('[data-wx]');
+  if(wxb){ state.wx={d:todayISO(),v:wxb.dataset.wx}; save(); renderToday(); return; }
+  const go=e.target.closest('[data-go]');
+  if(go){ e.preventDefault(); if(go.dataset.day) currentDay=go.dataset.day; renderTrain(); showTab(go.dataset.go); return; }
+  const dk=e.target.closest('[data-dayk]');
+  if(dk){ currentDay=dk.dataset.dayk; renderTrain(); }
+});
+
+/* ---------------- boot ---------------- */
+function renderAll(){ renderHeader(); renderToday(); renderTrain(); renderRun(); renderEat(); renderShop(); renderTrend(); }
+renderAll();
+</script>
