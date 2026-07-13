@@ -151,6 +151,10 @@
     border-radius:8px;background:var(--card);color:var(--ink);font-variant-numeric:tabular-nums;text-align:center}
   .weightform input[type=date]{padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:14px}
 
+  .bar{height:7px;background:var(--card2);border-radius:4px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .25s ease}
+  @media(prefers-reduced-motion:reduce){.bar i{transition:none}}
+
   .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
   .stat3 .macro .v{font-size:22px}
   .rate-good{color:var(--good)} .rate-warn{color:var(--warn)} .rate-crit{color:var(--crit)}
@@ -382,6 +386,20 @@ const BREAKFASTS=[
 ];
 const AFTERNOON=['Whey shake with a banana','Cottage cheese + berries + black pepper (trust the pepper)','Two hard-boiled eggs + a piece of fruit','Half a can of tuna with mustard on crackers or toast'];
 
+/* ---------------- fuel tracker (calories · protein · water) ---------------- */
+const MEAL_PRESETS={b:{n:'Breakfast',c:450,p:45},l:{n:'Lunch box',c:500,p:45},a:{n:'Afternoon',c:300,p:35},d:{n:'Dinner',c:650,p:50}};
+const WATER_GOAL=128; // oz, 1 gallon
+function fuelToday(){
+  return (state.fuel && state.fuel[todayISO()]) || {w:0, meals:{}, extra:[]};
+}
+function saveFuel(f){ if(!state.fuel) state.fuel={}; state.fuel[todayISO()]=f; save(); }
+function fuelTotals(f){
+  let c=0,p=0;
+  Object.keys(f.meals).forEach(k=>{ if(f.meals[k]&&MEAL_PRESETS[k]){c+=MEAL_PRESETS[k].c;p+=MEAL_PRESETS[k].p;} });
+  f.extra.forEach(x=>{c+=x.c;p+=x.p;});
+  return {c,p};
+}
+
 /* ---------------- tabs ---------------- */
 const tabsEl=document.getElementById('tabs');
 tabsEl.addEventListener('click',e=>{
@@ -498,16 +516,51 @@ function renderToday(){
         <div><div class="t">${p.t}</div><div class="d">${p.d}</div></div></label>`).join('')}
     </div>
     <h2>Fuel today</h2>
-    <div class="card">
-      <div class="macros">
-        <div class="macro"><div class="v">1,900–2,000</div><div class="l">calories</div></div>
-        <div class="macro"><div class="v">175–185 g</div><div class="l">protein</div><div class="n">the number that matters</div></div>
-        <div class="macro"><div class="v">55–65 g</div><div class="l">fat</div><div class="n">floor, not ceiling</div></div>
-        <div class="macro"><div class="v">1 gal</div><div class="l">water</div><div class="n">Durham summer minimum</div></div>
-      </div>
-      <p class="fine">Four feedings, 40–45 g protein each: breakfast ~450 · lunch box ~500 · afternoon ~300 · dinner ~650. Details in Eat.</p>
-    </div>`;
+    ${fuelCard()}`;
   if(wx==='auto' && !wxFresh() && !wxFetchFailed) fetchWX().then(()=>renderToday());
+}
+function fuelCard(){
+  const f=fuelToday(), tot=fuelTotals(f);
+  const calPct=Math.min(100, tot.c/2000*100), proPct=Math.min(100, tot.p/180*100), wPct=Math.min(100, f.w/WATER_GOAL*100);
+  const calOver=tot.c>2050, proHit=tot.p>=175;
+  return `<div class="card">
+      <div class="rowline" style="align-items:baseline;justify-content:space-between">
+        <h3 style="margin:0">Water</h3>
+        <span class="num" style="font-weight:800">${f.w} <span class="fine">/ ${WATER_GOAL} oz</span></span>
+      </div>
+      <div class="bar" style="margin:8px 0 10px"><i style="width:${wPct}%"></i></div>
+      <div class="sets" style="margin:0">
+        <button class="btn ghost" data-water="-8" aria-label="remove 8 ounces">−8</button>
+        <button class="btn ghost" data-water="8">+8 oz</button>
+        <button class="btn ghost" data-water="16">+16 oz</button>
+        <button class="btn ghost" data-water="32">+32 oz</button>
+      </div>
+      <p class="fine" style="margin-bottom:0">${f.w>=WATER_GOAL?'Gallon done — Durham summer handled.':'Gallon minimum. Dehydration reads as hunger and fatigue.'}</p>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:2px">Meals</h3>
+      <p class="fine" style="margin-top:0">Tap what you ate — the plan’s meals are fixed macros, so one tap logs the slot.</p>
+      <div class="sets" style="margin:0 0 12px">
+        ${Object.keys(MEAL_PRESETS).map(k=>{const m=MEAL_PRESETS[k],on=!!f.meals[k];
+          return `<button class="btn ${on?'':'ghost'}" data-meal="${k}">${on?'✓ ':''}${m.n} <span style="font-weight:500;opacity:.8">${m.c} · ${m.p}g</span></button>`;}).join('')}
+      </div>
+      <div class="rowline" style="align-items:center;gap:6px;flex-wrap:wrap">
+        <span class="fine" style="flex:none">Off-plan extra:</span>
+        <span class="set"><input type="number" id="fc" inputmode="numeric" placeholder="cal" aria-label="extra calories"></span>
+        <span class="set"><input type="number" id="fp" inputmode="numeric" placeholder="g pro" aria-label="extra protein grams"></span>
+        <button class="btn ghost" data-addfood="1">Add</button>
+      </div>
+      ${f.extra.length?`<div class="sets" style="margin-top:8px">${f.extra.map((x,i)=>`<button class="btn ghost" data-delextra="${i}" title="tap to remove" style="font-size:12.5px">${x.c} cal · ${x.p}g ✕</button>`).join('')}</div>`:''}
+      <div style="margin-top:14px">
+        <div class="rowline" style="justify-content:space-between"><span class="fine">Calories</span>
+          <span class="num ${calOver?'rate-crit':''}" style="font-weight:800">${tot.c} <span class="fine">/ 1,900–2,000</span></span></div>
+        <div class="bar" style="margin:5px 0 10px"><i style="width:${calPct}%;${calOver?'background:var(--crit)':''}"></i></div>
+        <div class="rowline" style="justify-content:space-between"><span class="fine">Protein — the number that matters</span>
+          <span class="num ${proHit?'rate-good':''}" style="font-weight:800">${tot.p} g <span class="fine">/ 175–185</span></span></div>
+        <div class="bar" style="margin:5px 0"><i style="width:${proPct}%"></i></div>
+      </div>
+      <p class="fine" style="margin-bottom:0">Meal-level on purpose: it answers “did I hit the day” at a glance. Keep Cronometer for gram-level audits; details for each slot live in Eat.</p>
+    </div>`;
 }
 
 /* ---------------- TRAIN ---------------- */
@@ -823,6 +876,17 @@ document.addEventListener('input',e=>{
 document.addEventListener('click',e=>{
   const wxb=e.target.closest('[data-wx]');
   if(wxb){ state.wx={d:todayISO(),v:wxb.dataset.wx}; save(); renderToday(); return; }
+  const wb=e.target.closest('[data-water]');
+  if(wb){ const f=fuelToday(); f.w=Math.max(0,f.w + +wb.dataset.water); saveFuel(f); renderToday(); return; }
+  const mb=e.target.closest('[data-meal]');
+  if(mb){ const f=fuelToday(); f.meals[mb.dataset.meal]=!f.meals[mb.dataset.meal]; saveFuel(f); renderToday(); return; }
+  if(e.target.closest('[data-addfood]')){
+    const c=Math.round(+document.getElementById('fc').value)||0, p=Math.round(+document.getElementById('fp').value)||0;
+    if(c>0||p>0){ const f=fuelToday(); f.extra.push({c,p}); saveFuel(f); renderToday(); }
+    return;
+  }
+  const xb=e.target.closest('[data-delextra]');
+  if(xb){ const f=fuelToday(); f.extra.splice(+xb.dataset.delextra,1); saveFuel(f); renderToday(); return; }
   const go=e.target.closest('[data-go]');
   if(go){ e.preventDefault(); if(go.dataset.day) currentDay=go.dataset.day; renderTrain(); showTab(go.dataset.go); return; }
   const dk=e.target.closest('[data-dayk]');
