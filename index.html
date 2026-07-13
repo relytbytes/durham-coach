@@ -15,61 +15,84 @@
   :root{
     --canvas:#FBFBFA; --card:#ffffff; --line:#EDEEEF; --line2:#E2E4E5;
     --ink:#16181A; --sub:#8A9096; --mut:#A2A7AC;
-    --teal:#0E7C74; --teal-deep:#0E5C56; --chip:#E4F1EF; --mint:#5FD3C6;
+    --teal:#0E7C74; --teal-hi:#12A093; --teal-deep:#0E5C56; --chip:#E4F1EF; --mint:#5FD3C6;
     --hero:#16181A; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
     --track:#EBECED; --warn:#B26A00; --crit:#C23434;
+    --shadow:0 1px 2px rgba(16,24,26,.05),0 12px 28px -18px rgba(16,24,26,.25);
+    --shadow-sm:0 1px 2px rgba(16,24,26,.04);
   }
   @media (prefers-color-scheme: dark){
     :root{
       --canvas:#131415; --card:#1D1F21; --line:#2A2D30; --line2:#33373B;
       --ink:#F2F3F4; --sub:#9AA0A6; --mut:#6E747A;
-      --teal:#2FB3A8; --teal-deep:#5FD3C6; --chip:#17322F; --mint:#5FD3C6;
+      --teal:#2FB3A8; --teal-hi:#5FD3C6; --teal-deep:#5FD3C6; --chip:#17322F; --mint:#5FD3C6;
       --hero:#0E1011; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
       --track:#2A2D30; --warn:#E0A33C; --crit:#E66767;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -18px rgba(0,0,0,.5);
+      --shadow-sm:0 1px 2px rgba(0,0,0,.25);
     }
   }
   :root[data-theme="light"]{
     --canvas:#FBFBFA; --card:#ffffff; --line:#EDEEEF; --line2:#E2E4E5;
     --ink:#16181A; --sub:#8A9096; --mut:#A2A7AC;
-    --teal:#0E7C74; --teal-deep:#0E5C56; --chip:#E4F1EF; --mint:#5FD3C6;
+    --teal:#0E7C74; --teal-hi:#12A093; --teal-deep:#0E5C56; --chip:#E4F1EF; --mint:#5FD3C6;
     --hero:#16181A; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
     --track:#EBECED; --warn:#B26A00; --crit:#C23434;
+    --shadow:0 1px 2px rgba(16,24,26,.05),0 12px 28px -18px rgba(16,24,26,.25);
+    --shadow-sm:0 1px 2px rgba(16,24,26,.04);
   }
   :root[data-theme="dark"]{
     --canvas:#131415; --card:#1D1F21; --line:#2A2D30; --line2:#33373B;
     --ink:#F2F3F4; --sub:#9AA0A6; --mut:#6E747A;
-    --teal:#2FB3A8; --teal-deep:#5FD3C6; --chip:#17322F; --mint:#5FD3C6;
+    --teal:#2FB3A8; --teal-hi:#5FD3C6; --teal-deep:#5FD3C6; --chip:#17322F; --mint:#5FD3C6;
     --hero:#0E1011; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
     --track:#2A2D30; --warn:#E0A33C; --crit:#E66767;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -18px rgba(0,0,0,.5);
+    --shadow-sm:0 1px 2px rgba(0,0,0,.25);
   }
-  *{box-sizing:border-box}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{background:var(--canvas);color:var(--ink);
     font:15px/1.5 'Schibsted Grotesk',-apple-system,'Segoe UI',system-ui,sans-serif;
     -webkit-font-smoothing:antialiased}
-  .wrap{max-width:560px;margin:0 auto;padding:0 18px 92px}
+  .wrap{max-width:560px;margin:0 auto;padding:0 18px 100px}
+
+  @keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+  @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,14px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes ringGrow{from{stroke-dashoffset:var(--circ)}to{stroke-dashoffset:var(--off)}}
+  @keyframes drawLine{to{stroke-dashoffset:0}}
+  section.tab.on{animation:fadeSlide .35s ease both}
+  .au{animation:fadeUp .45s ease both}
+  @media(prefers-reduced-motion:reduce){
+    section.tab.on,.au,.toast{animation:none !important}
+    .ringfg{animation:none !important;stroke-dashoffset:var(--off) !important}
+    .trendline{animation:none !important;stroke-dashoffset:0 !important}
+    .meter i,.hbar i{transition:none}
+  }
 
   header.app{position:sticky;top:0;z-index:20;background:var(--canvas);margin:0 -18px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
   .brand{display:flex;justify-content:space-between;align-items:center}
   .lockup{display:flex;align-items:center;gap:9px}
-  .lockup .word{font-weight:800;font-size:17px;letter-spacing:-.02em}
+  .lockup .word{font-weight:800;font-size:17px;letter-spacing:-.03em}
   .streak{display:flex;align-items:center;gap:6px;background:var(--chip);padding:5px 11px;border-radius:20px;
-    font-weight:700;font-size:12px;color:var(--teal)}
+    font-weight:700;font-size:12px;color:var(--teal);font-variant-numeric:tabular-nums}
   .streak .dot{width:6px;height:6px;border-radius:50%;background:var(--teal)}
 
   nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:30;background:var(--card);border-top:1px solid var(--line);
-    display:flex;justify-content:space-around;padding:12px 8px calc(12px + env(safe-area-inset-bottom))}
-  nav.tabs button{background:none;border:none;cursor:pointer;font:500 13px 'Schibsted Grotesk',system-ui,sans-serif;color:var(--mut);padding:4px 14px}
-  nav.tabs button.on{color:var(--ink);font-weight:700}
-  nav.tabs button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:6px}
+    display:flex;justify-content:space-around;padding:10px 8px calc(10px + env(safe-area-inset-bottom))}
+  nav.tabs button{background:none;border:none;cursor:pointer;color:var(--mut);padding:2px 12px;
+    display:flex;flex-direction:column;align-items:center;gap:4px;font:700 10px 'Schibsted Grotesk',system-ui;transition:transform .12s}
+  nav.tabs button:active{transform:scale(.9)}
+  nav.tabs button.on{color:var(--teal)}
+  nav.tabs button:focus-visible{outline:2px solid var(--teal);outline-offset:2px;border-radius:8px}
 
   section.tab{display:none}
-  section.tab.on{display:block;animation:fade .18s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1}}
-  @media(prefers-reduced-motion:reduce){section.tab.on{animation:none}.meter i,.hbar i{transition:none}}
+  section.tab.on{display:block}
 
   .eyebrow{font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:20px 0 9px;display:flex;justify-content:space-between;align-items:baseline;gap:14px}
-  .eyebrow .note{text-align:right;flex:1}
+  .eyebrow .note{text-align:right;flex:1;text-transform:none;letter-spacing:0;font-weight:500}
   .eyebrow a,.eyebrow button{font:600 11px 'Schibsted Grotesk',system-ui;color:var(--teal);background:none;border:none;cursor:pointer;padding:0;letter-spacing:.02em;text-transform:none;text-decoration:none}
 
   .hero{background:var(--hero);border-radius:20px;padding:18px 19px;color:var(--hero-ink);margin:6px 0 12px}
@@ -79,7 +102,7 @@
   .hbar{height:6px;background:var(--hero-track);border-radius:4px;overflow:hidden}
   .hbar i{display:block;height:100%;background:var(--mint);border-radius:4px;transition:width .25s ease}
 
-  .wcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin:9px 0}
+  .wcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin:9px 0;box-shadow:var(--shadow-sm)}
   .wcard h3{margin:0;font-size:15px;font-weight:700}
   .sub{color:var(--sub);font-size:13px;margin:3px 0}
   .fine{color:var(--mut);font-size:12.5px}
@@ -87,16 +110,14 @@
   .cue b{color:var(--teal);font-style:normal;font-weight:700}
   .num{font-variant-numeric:tabular-nums;white-space:nowrap}
 
-  .stat3{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:12px 0}
-  .stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
-  .stat .l{font-weight:600;font-size:10px;letter-spacing:.05em;color:var(--mut);text-transform:uppercase}
-  .stat .v{font-weight:800;font-size:18px;line-height:1;margin-top:6px;font-variant-numeric:tabular-nums}
-  .stat .n{font-weight:500;font-size:10.5px;color:var(--sub);margin-top:3px}
-  .stat .n.t{color:var(--teal)}
+  .bignum{font-weight:800;font-size:54px;line-height:.85;letter-spacing:-.035em;font-variant-numeric:tabular-nums}
+  .bignum small{font-size:22px;color:var(--mut);letter-spacing:0;font-weight:800}
+  .deltachip{display:inline-flex;align-items:center;gap:6px;background:var(--chip);padding:5px 10px;border-radius:8px;
+    font-weight:700;font-size:12px;color:var(--teal);margin-top:10px}
 
-  .plan{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:14px;padding:13px 15px;margin:9px 0;display:flex;gap:13px;align-items:flex-start}
+  .plan{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:16px;padding:14px 15px;margin:10px 0;display:flex;gap:13px;align-items:flex-start;box-shadow:var(--shadow)}
   .plan.hot{border-left-color:var(--teal)}
-  .plan .t{font-weight:700;font-size:15px;line-height:1.15}
+  .plan .t{font-weight:700;font-size:15.5px;line-height:1.1}
   .plan .d{font-weight:500;font-size:12px;color:var(--sub);margin-top:3px}
   .plan.donetext .t{color:var(--mut);text-decoration:line-through}
 
@@ -105,15 +126,23 @@
   .ring.on{background:var(--teal);border-color:var(--teal);color:#fff}
   .ring:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 
-  .btn{background:var(--teal);color:#fff;border:none;border-radius:9px;padding:8px 14px;font:600 12px 'Schibsted Grotesk',system-ui;cursor:pointer}
+  .btn{background:var(--teal);color:#fff;border:none;border-radius:10px;padding:9px 15px;font:700 12.5px 'Schibsted Grotesk',system-ui;cursor:pointer;transition:transform .12s}
+  .btn:active{transform:scale(.96)}
   .btn.ghost{background:none;border:1px solid var(--line2);color:var(--sub)}
   .btn.chipbtn{background:var(--chip);color:var(--teal)}
+  .btn.wide{display:block;width:100%;padding:14px 0;font-size:15px;border-radius:12px}
   .btn:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 
   .chips{display:flex;gap:6px;flex-wrap:wrap}
   .chips button{background:var(--card);border:1px solid var(--line2);border-radius:20px;padding:6px 12px;
     font:600 12px 'Schibsted Grotesk',system-ui;color:var(--sub);cursor:pointer}
   .chips button.on{background:var(--teal);border-color:var(--teal);color:#fff}
+
+  .qa{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+  .qa button{background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 6px;text-align:center;cursor:pointer;box-shadow:var(--shadow-sm);transition:transform .12s}
+  .qa button:active{transform:scale(.95)}
+  .qa .qn{font-weight:700;font-size:13px;color:var(--ink)}
+  .qa .qv{font-weight:600;font-size:11px;color:var(--teal);margin-top:3px}
 
   .wxnote{border-left:3px solid var(--warn);background:var(--chip);border-radius:0 9px 9px 0;padding:8px 12px;margin-top:9px;font-size:12.5px}
   .callout{border-left:3px solid var(--teal);background:var(--chip);border-radius:0 10px 10px 0;padding:10px 14px;margin:10px 0;font-size:13px}
@@ -122,22 +151,33 @@
 
   .meter{height:6px;background:var(--track);border-radius:4px;overflow:hidden}
   .meter i{display:block;height:100%;background:var(--teal);border-radius:4px;transition:width .25s ease}
+  .meter i.ink{background:var(--ink)}
 
-  .ex{border-bottom:1px solid var(--line);padding:13px 0}
-  .ex:last-child{border-bottom:none;padding-bottom:4px}
-  .ex .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-  .ex .nm{font-weight:700;font-size:15px}
-  .ex .rx{color:var(--teal);font-size:12.5px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
-  .last{font-size:12px;color:var(--mut);margin-top:5px;font-variant-numeric:tabular-nums}
-  .sets{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
-  .set{display:flex;align-items:center;gap:4px;background:var(--track);border-radius:9px;padding:5px 7px}
-  .set input{width:50px;border:none;background:var(--card);color:var(--ink);border-radius:7px;
-    padding:6px 4px;font:700 13px 'Schibsted Grotesk',system-ui;text-align:center;font-variant-numeric:tabular-nums}
-  .set input:focus-visible{outline:2px solid var(--teal)}
-  .set .x{color:var(--mut);font-size:11px}
+  .curcard{background:var(--card);border:2px solid var(--teal);border-radius:18px;padding:16px;margin:12px 0;box-shadow:0 8px 28px -14px rgba(14,124,116,.5)}
+  .setrow{display:flex;gap:8px;margin-top:13px}
+  .setcell{flex:1;text-align:center;border-radius:11px;padding:12px 0;font:800 15px 'Schibsted Grotesk';background:var(--track);color:var(--mut);transition:all .25s}
+  .setcell.done{background:var(--teal);color:#fff}
+  .setcell.cur{background:var(--ink);color:var(--canvas)}
+  .loginputs{display:flex;gap:8px;align-items:center;margin-top:13px}
+  .loginputs input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:10px;
+    padding:11px 6px;font:700 16px 'Schibsted Grotesk',system-ui;text-align:center;font-variant-numeric:tabular-nums}
+  .loginputs input:focus-visible{outline:2px solid var(--teal)}
+  .restbox{margin-top:13px;background:var(--chip);border-radius:12px;padding:12px 14px}
+  .restbar{margin-top:9px;height:5px;background:var(--track);border-radius:3px;overflow:hidden}
+  .restbar i{display:block;height:100%;background:var(--teal);border-radius:3px;transition:width 1s linear}
+  .exrow{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin:9px 0;box-shadow:var(--shadow-sm);cursor:pointer}
+  .exrow.done{opacity:.6}
+  .exrow .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .exrow .nm{font-weight:700;font-size:15px}
+  .rx{color:var(--teal);font-size:12.5px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .guide{margin-top:10px;border-top:1px solid var(--line);padding-top:10px;font-size:13px}
+  .guide .gl{font-weight:700;font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--teal);margin:8px 0 2px}
+  .guide .gl:first-child{margin-top:0}
+  .guide p{margin:0;color:var(--sub)}
   .pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:7px;padding:3px 8px}
   .pill.now{background:var(--teal);color:#fff}
   .pill.hint{background:var(--chip);color:var(--teal)}
+  .last{font-size:12px;color:var(--mut);margin-top:5px;font-variant-numeric:tabular-nums}
 
   table.plain{width:100%;border-collapse:collapse;font-size:13.5px}
   table.plain td{padding:7px 8px 7px 0;border-bottom:1px solid var(--line);vertical-align:top}
@@ -152,8 +192,8 @@
   .groitem .q{color:var(--sub);font-size:12px}
   .groitem .p{color:var(--mut);font-size:12px;font-variant-numeric:tabular-nums;width:36px;text-align:right}
 
-  .milestone{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin:8px 0}
-  .milestone.next{border:2px solid var(--teal)}
+  .milestone{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:12px 14px;margin:8px 0;box-shadow:var(--shadow-sm)}
+  .milestone.next{border:2px solid var(--teal);box-shadow:0 8px 24px -16px rgba(14,124,116,.5)}
   .milestone.todo{opacity:.6}
   .mk{width:22px;height:22px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;font:700 12px 'Schibsted Grotesk'}
   .milestone.done .mk{background:var(--teal);color:#fff}
@@ -173,6 +213,19 @@
   .back{display:inline-flex;align-items:center;gap:5px;background:none;border:none;cursor:pointer;
     font:600 13px 'Schibsted Grotesk',system-ui;color:var(--teal);padding:14px 0 0}
   ul.tight{margin:6px 0;padding-left:19px} ul.tight li{margin:4px 0;font-size:13.5px}
+
+  .toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:var(--canvas);
+    padding:11px 18px;border-radius:24px;font:700 13px 'Schibsted Grotesk';box-shadow:0 12px 30px -10px rgba(0,0,0,.4);
+    white-space:nowrap;z-index:50;display:none;animation:toastIn .3s ease both}
+  .toast.on{display:block}
+
+  .searchrow{display:flex;gap:8px;margin-top:10px}
+  .searchrow input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:10px;
+    padding:10px 12px;font:600 14px 'Schibsted Grotesk',system-ui}
+  .searchrow input:focus-visible{outline:2px solid var(--teal)}
+  .offresult{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .offresult:last-child{border-bottom:none}
+  #scanvideo{width:100%;border-radius:12px;margin-top:10px;display:none;background:#000}
   dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:20px;max-width:320px;font-family:inherit}
   dialog::backdrop{background:rgba(0,0,0,.4)}
 </style>
@@ -181,7 +234,7 @@
   <header class="app">
     <div class="brand">
       <div class="lockup">
-        <svg width="26" height="26" viewBox="0 0 72 72" aria-hidden="true"><rect width="72" height="72" rx="20" fill="#0E7C74"/><g fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 22 L38 36 L22 50"/><path d="M36 22 L52 36 L36 50" opacity="0.55"/></g></svg>
+        <svg width="28" height="28" viewBox="0 0 72 72" aria-hidden="true"><rect width="72" height="72" rx="20" fill="#0E7C74"/><g fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 22 L38 36 L22 50"/><path d="M36 22 L52 36 L36 50" opacity="0.55"/></g></svg>
         <span class="word">cadence</span>
       </div>
       <div class="streak" id="streakchip"></div>
@@ -196,11 +249,13 @@
   <section class="tab" id="tab-shop"></section>
 </div>
 
+<div class="toast" id="toast" role="status"></div>
+
 <nav class="tabs" id="tabs" aria-label="Sections">
-  <button data-tab="today" class="on">Today</button>
-  <button data-tab="train">Train</button>
-  <button data-tab="eat">Eat</button>
-  <button data-tab="trend">Trend</button>
+  <button data-tab="today" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>Today</button>
+  <button data-tab="train"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M7 8v8M17 8v8M20 9v6M7 12h10"/></svg>Train</button>
+  <button data-tab="eat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 9v12M16 21V3c-2 1-2 7 0 8"/></svg>Eat</button>
+  <button data-tab="trend"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6M4 20h16M8 15l3-4 3 2 4-6"/></svg>Trend</button>
 </nav>
 
 <dialog id="startdlg">
@@ -215,7 +270,7 @@
 
 <script>
 'use strict';
-/* ---------------- storage (same key + shapes as v1 — existing data carries over) ---------------- */
+/* ---------------- storage (same key + shapes since v1 — data carries over) ---------------- */
 const KEY='durham-coach-v1';
 const state = load();
 function load(){
@@ -223,6 +278,7 @@ function load(){
   return { start:'2026-07-13', primer:{}, done:{}, logs:{}, weights:[], grocery:{week:null,checked:{}} };
 }
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------------- dates ---------------- */
 function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -241,48 +297,105 @@ const PRIMER=[
   {t:'Stomach vacuums 2 × 20 s', d:'Exhale fully, navel to spine. Try to make your waistband fall off.'}
 ];
 const WORKOUTS={
-  A:{name:'Glutes + lower', tag:'heavy hinge day', ex:[
+  A:{name:'Glutes + lower', ex:[
     {id:'hipthrust', n:'Hip thrust (barbell or dumbbell)', rx:'4 × 8–12', sets:4, top:12,
-     cue:'The rep ends when your <b>glutes finish, not when your back arches</b>. Ribs down, slight pelvic tuck at the top. Shins vertical, drive through heels.'},
+     cue:'The rep ends when your <b>glutes finish, not when your back arches</b>. Ribs down, slight pelvic tuck at the top.'},
     {id:'rdl', n:'Romanian deadlift', rx:'3 × 8–12', sets:3, top:12,
-     cue:'<b>Close a car door behind you with your butt.</b> Hinge, don’t squat — knees keep the same soft bend. Stop at a strong hamstring stretch.'},
+     cue:'<b>Close a car door behind you with your butt.</b>'},
     {id:'lunge', n:'Walking lunges', rx:'3 × 10 per leg', sets:3, top:0,
-     cue:'<b>Long strides + slight forward lean = glutes.</b> Short strides = quads. Push through the front heel.'},
+     cue:'<b>Long strides + slight forward lean = glutes.</b> Short strides = quads.'},
     {id:'kickback', n:'Cable or band kickbacks', rx:'2 × 12–15 per leg', sets:2, top:15,
-     cue:'<b>The leg is a lever; the glute does the kicking.</b> If your lower back arches, you kicked too high.'},
+     cue:'<b>The leg is a lever; the glute does the kicking.</b>'},
     {id:'deadbugA', n:'Dead bug (slow, 3 s lower)', rx:'3 × 10 per side', sets:3, top:0,
      cue:'Lower back pressed into the floor the entire rep.'}
   ]},
-  B:{name:'Upper focus', tag:'press + pull', ex:[
+  B:{name:'Upper focus', ex:[
     {id:'bench', n:'Dumbbell bench press', rx:'4 × 6–10', sets:4, top:10,
-     cue:'<b>Bend the bar in half; elbows at 45°, not chicken wings.</b> Stop one rep before grinding — no spotter.'},
+     cue:'<b>Bend the bar in half; elbows at 45°, not chicken wings.</b>'},
     {id:'row1', n:'One-arm dumbbell row', rx:'4 × 8–12', sets:4, top:12,
-     cue:'<b>Row to your hip pocket</b>, start the pull with the shoulder blade, no torso twist.'},
+     cue:'<b>Row to your hip pocket</b>, start the pull with the shoulder blade.'},
     {id:'ohp', n:'Seated dumbbell shoulder press', rx:'3 × 8–12', sets:3, top:12,
-     cue:'<b>Ribs down.</b> If your lower back arches off the bench, the weight is too heavy and your waist goal is paying for it.'},
+     cue:'<b>Ribs down.</b> If the lower back arches, the weight is too heavy.'},
     {id:'pulldown', n:'Lat pulldown or pull-ups', rx:'3 × 8–12', sets:3, top:12,
-     cue:'<b>Elbows to your back pockets.</b> Forearms burning + back not = pulling with your hands. Pull-ups get easy around 165.'},
+     cue:'<b>Elbows to your back pockets.</b> Pull-ups get easy around 165.'},
     {id:'curl', n:'Dumbbell curls', rx:'2 × 12', sets:2, top:12,
-     cue:'Elbows pinned to ribs — <b>if they drift forward it’s a front raise, not a curl.</b>'},
+     cue:'Elbows pinned to ribs — <b>drifting forward makes it a front raise.</b>'},
     {id:'tri', n:'Overhead triceps extension', rx:'2 × 12', sets:2, top:12,
      cue:'<b>Elbows point at the ceiling and stay there.</b>'},
     {id:'vacB', n:'Stomach vacuums', rx:'3 × 20–30 s', sets:3, top:0, unit:'s',
-     cue:'Longer holds today. Best on an empty-ish stomach — post-workout slot works.'}
+     cue:'Longer holds today, on an empty-ish stomach.'}
   ]},
-  C:{name:'Full body + glute volume', tag:'round two', ex:[
+  C:{name:'Full body + glute volume', ex:[
     {id:'bss', n:'Bulgarian split squat', rx:'3 × 8–10 per leg', sets:3, top:10,
-     cue:'<b>The front leg does all the work; the back leg is a kickstand.</b> Hinge slightly forward for glute bias. Railroad tracks, not tightrope.'},
+     cue:'<b>The front leg does all the work; the back leg is a kickstand.</b>'},
     {id:'trapdl', n:'Trap bar or sumo deadlift', rx:'3 × 6–8', sets:3, top:8,
-     cue:'<b>Arms are ropes.</b> Take the slack out, brace like someone’s about to poke your stomach, push the floor away. Film this one weekly.'},
+     cue:'<b>Arms are ropes.</b> Brace, then push the floor away. Film this weekly.'},
     {id:'incline', n:'Incline dumbbell press', rx:'3 × 8–12', sets:3, top:12,
-     cue:'30° incline. Same 45° elbow rule, same stop-before-grinding rule.'},
+     cue:'30° incline. Same elbow rule, same stop-before-grinding rule.'},
     {id:'row2', n:'Cable or dumbbell row', rx:'3 × 10–12', sets:3, top:12,
-     cue:'Chest tall, <b>shoulder blades start the pull</b>, control the return.'},
+     cue:'Chest tall, <b>shoulder blades start the pull.</b>'},
     {id:'abd', n:'Seated or banded hip abductions', rx:'3 × 15–20', sets:3, top:20,
-     cue:'<b>Pause 1 s at the widest point — the last 2 inches build the upper-glute shelf.</b> Lean slightly forward.'},
+     cue:'<b>Pause 1 s at the widest point — the last 2 inches build the shelf.</b>'},
     {id:'kneeraise', n:'Hanging knee raises', rx:'3 × 10–15', sets:3, top:15,
-     cue:'<b>Tuck the pelvis like a scared dog tucking its tail.</b> Kill the swing between reps. Too hard? Reverse crunches, same pattern.'}
+     cue:'<b>Tuck the pelvis like a scared dog tucking its tail.</b>'}
   ]}
+};
+/* full how-to guide per exercise, from the exercise guide */
+const GUIDE={
+  hipthrust:{s:'Upper back against a bench — the edge hits at the bottom of your shoulder blades. Bar across the hip crease with a pad or folded towel. Feet flat, hip-width, placed so your shins are vertical at the top of the rep.',
+    e:'Drive through your heels and squeeze glutes to lift hips until torso and thighs form a flat tabletop. Chin tucked, eyes forward — not at the ceiling. Lower with control until hips are a few inches off the floor, then drive again.',
+    m:'Arching the lower back to fake extra height · pushing through the toes · knees caving inward. No barbell? A heavy dumbbell across the hips works, then single-leg hip thrusts when that gets easy.'},
+  rdl:{s:'Stand holding the bar or dumbbells against your thighs, feet hip-width, soft bend in the knees.',
+    e:'Push your hips straight back, letting the weight slide down your thighs and shins. Knees keep that same slight bend — this is a hinge, not a squat. Descend to a strong hamstring stretch (usually mid-shin), then drive hips forward and squeeze glutes to stand tall.',
+    m:'Rounding the lower back by going too deep too soon · bending the knees more as you lower (that’s a squat) · looking up — keep the neck neutral, eyes on the floor a few feet ahead.'},
+  lunge:{s:'Dumbbells at your sides, standing tall.',
+    e:'Take a long step forward and lower until the back knee nearly touches the floor, front shin roughly vertical. Push through the front heel to bring the back foot through into the next step.',
+    m:'Steps too short · pushing off the back toe instead of the front heel · front knee collapsing inward.'},
+  kickback:{s:'Ankle cuff on a low cable, or a loop band around your ankles. Hinge slightly forward holding something stable.',
+    e:'Kick the working leg straight back and slightly up, squeezing the glute hard at the end. Slow on the return.',
+    m:'Kicking too high — if your lower back arches, that’s the tell. Swinging the leg instead of squeezing the glute.'},
+  deadbugA:{s:'On your back, arms straight up, knees stacked over hips.',
+    e:'Lower opposite arm and leg slowly — 3 seconds down today — while the lower back stays pressed into the floor like you’re squashing a grape under it.',
+    m:'The lower back peeling off the floor · rushing the descent.'},
+  bench:{s:'Flat bench, dumbbells starting at chest level just outside your shoulders, feet planted on the floor.',
+    e:'Press up and slightly inward until arms are extended; lower with control until the dumbbells reach chest height with elbows about 45° from your torso.',
+    m:'Elbows flared to 90° · grinding a rep with no spotter — stop one rep short. If you do fail, dumbbells drop safely to the sides; that’s why it’s dumbbells, not a barbell.'},
+  row1:{s:'One knee and same-side hand on a bench, other foot planted, back flat like a table.',
+    e:'Pull the dumbbell toward your hip pocket — not your armpit — squeezing the shoulder blade back at the top. Lower to a full stretch at the bottom.',
+    m:'Rowing to the armpit · twisting the torso to heave the weight up.'},
+  ohp:{s:'Bench upright or one notch back, dumbbells at shoulder height, palms forward or slightly turned in.',
+    e:'Press straight up until arms extend; lower until the dumbbells reach roughly ear level.',
+    m:'The lower back arching off the bench — that means the weight is too heavy, and your waist goal is paying for it.'},
+  pulldown:{s:'Grip slightly wider than shoulders. Seated with thighs under the pads, or hanging from the bar.',
+    e:'Pull the bar to your upper chest (or chest to bar), leading with the elbows driving down and back. Control the way up to a full stretch.',
+    m:'Pulling with the hands — forearms burn, back doesn’t · leaning way back. Can’t do 8 pull-ups yet? Normal at 180; use the pulldown and revisit around 165.'},
+  curl:{s:'Dumbbells at your sides, standing.',
+    e:'Curl without swinging, elbows pinned to your ribs the whole set.',
+    m:'Elbows drifting forward — that turns it into a front raise.'},
+  tri:{s:'One dumbbell held with both hands overhead.',
+    e:'Lower it behind your head by bending only the elbows, then press back up.',
+    m:'Elbows flaring out to the sides — they point at the ceiling and stay there.'},
+  vacB:{s:'Best on an empty-ish stomach — the post-workout slot works well.',
+    e:'Exhale fully, then pull your navel toward your spine as hard as you can and hold while breathing shallowly. Try to make your waistband fall off.',
+    m:'Just sucking in without the full exhale first — the exhale is what lets the transverse abdominis do the work.'},
+  bss:{s:'Stand about 2.5 feet in front of a bench, top of the rear foot resting on it. Bodyweight for the first week, then dumbbells at your sides.',
+    e:'Lower straight down until the rear knee nearly touches the floor. Front knee tracks over the toes but the drive comes through the front heel. For glute bias, hinge the torso slightly forward over the front thigh.',
+    m:'Standing too close to the bench (cramps the movement) · staying bolt upright (shifts work to quads) · a tightrope-narrow stance — think railroad tracks.'},
+  trapdl:{s:'Trap bar: stand inside the hexagon, hinge down with a flat back, grip the handles. Sumo alternative: wide stance, toes out 30–45°, grip the bar inside your knees, chest up.',
+    e:'Take the slack out of the bar, brace like someone’s about to poke your stomach, then stand up by pushing the floor away. Knees track out on sumo.',
+    m:'Jerking the bar off the floor · hips shooting up first · rounding the back. This is the lift most worth filming from the side once a week.'},
+  incline:{s:'Same as the flat press but on a 30° incline — targets the upper chest.',
+    e:'Press to extension, lower with control, elbows about 45° from the torso.',
+    m:'Same chicken-wing elbows, same rule: stop one rep before grinding.'},
+  row2:{s:'Seated cable row if the gym has one, chest tall. Otherwise chest-supported dumbbell rows on an incline bench.',
+    e:'Pull the handle to your sternum, squeeze the shoulder blades together, control the return.',
+    m:'Heaving with the torso · shrugging the shoulders up instead of pulling the blades back.'},
+  abd:{s:'Machine: sit with knees against the pads. Band: loop just above the knees, sit on the edge of a bench.',
+    e:'Push the knees apart and pause a full second at the widest point. Leaning the torso slightly forward biases the upper glute.',
+    m:'Bouncing through reps without the pause — the last 2 inches are where the upper-glute shelf gets built.'},
+  kneeraise:{s:'Hang from a pull-up bar, arms straight.',
+    e:'Curl your knees toward your chest by tucking the pelvis — like a scared dog tucking its tail — not just lifting the legs. Lower slowly and kill the swing before the next rep.',
+    m:'Hip-flexor swinging without the pelvic tuck. Too hard at first? Reverse crunches on the floor train the same pattern, or use the captain’s chair.'}
 };
 const TEMPLATE={ // 0=Sun · kind drives the weather swaps
   1:{am:{t:'Strength A — glutes + lower',tab:'train',k:'A',kind:'indoor'}, pm:{t:'Walk 35–45 min',kind:'walk',d:'After 8 PM or indoors. A dusk dog walk counts fully.'}},
@@ -334,7 +447,7 @@ const BREAKFASTS=[
 ];
 const AFTERNOON=['Whey shake with a banana','Cottage cheese + berries + black pepper (trust the pepper)','Two hard-boiled eggs + a piece of fruit','Half a can of tuna with mustard on crackers or toast'];
 
-/* ---------------- weather (auto from Open-Meteo where fetch is allowed, manual chips as fallback) ---------------- */
+/* ---------------- weather ---------------- */
 const WX_OPTS=[{v:'auto',l:'Auto'},{v:'clear',l:'Clear'},{v:'rain',l:'Rain'},{v:'heat90',l:'HI 90+'},{v:'heat100',l:'HI 100+'}];
 const WX_URL='https://api.open-meteo.com/v1/forecast?latitude=35.994&longitude=-78.8986&hourly=apparent_temperature,precipitation_probability&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1';
 let wxFetchFailed=false;
@@ -378,10 +491,10 @@ function wxAdjust(kind, slot){
   return msg?msg+why:'';
 }
 
-/* ---------------- fuel (calories · protein · water) ---------------- */
+/* ---------------- fuel ---------------- */
 const MEAL_PRESETS={b:{n:'Breakfast',c:450,p:45},l:{n:'Lunch box',c:500,p:45},a:{n:'Afternoon',c:300,p:35},d:{n:'Dinner',c:650,p:50}};
-const WATER_GOAL=128;
-const CAL_TARGET=1950, PRO_TARGET=180;
+const QUICK_ADDS=[{n:'Protein shake',c:160,p:30},{n:'Chicken & rice',c:280,p:40},{n:'Banana',c:105,p:1}];
+const WATER_GOAL=128, CAL_TARGET=1950, PRO_TARGET=180;
 function fuelToday(){ return (state.fuel && state.fuel[todayISO()]) || {w:0, meals:{}, extra:[]}; }
 function saveFuel(f){ if(!state.fuel) state.fuel={}; state.fuel[todayISO()]=f; save(); }
 function fuelTotals(f){
@@ -391,18 +504,17 @@ function fuelTotals(f){
   return {c,p};
 }
 
-/* ---------------- derived stats ---------------- */
+/* ---------------- derived ---------------- */
 function dayActive(iso){
-  const pr=state.primer[iso], dn=state.done[iso], fu=state.fuel&&state.fuel[iso];
+  const pr=state.primer[iso], dn=state.done[iso];
   return (pr&&pr.filter(Boolean).length===4) || (dn&&(dn.am||dn.pm)) || false;
 }
 function streak(){
   let n=0;
   for(let i=0;i<400;i++){
     const d=new Date(); d.setDate(d.getDate()-i);
-    const active=dayActive(isoOf(d));
-    if(active) n++;
-    else if(i===0) continue;      // an unfinished today doesn't break the streak
+    if(dayActive(isoOf(d))) n++;
+    else if(i===0) continue;
     else break;
   }
   return n;
@@ -414,10 +526,7 @@ function avgWindow(days, endOffset){
   if(!pts.length) return null;
   return pts.reduce((a,p)=>a+p.w,0)/pts.length;
 }
-function weeklyRate(){
-  const a=avgWindow(7,0), b=avgWindow(7,7);
-  return (a!=null&&b!=null)?(b-a):null;
-}
+function weeklyRate(){ const a=avgWindow(7,0), b=avgWindow(7,7); return (a!=null&&b!=null)?(b-a):null; }
 function currentWeight(){
   const ws=[...state.weights].sort((a,b)=>a.d<b.d?-1:1);
   return ws.length?ws[ws.length-1]:null;
@@ -430,14 +539,13 @@ function estGoalDate(){
   const d=new Date(); d.setDate(d.getDate()+Math.round(days));
   return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
 }
-function weeklyAvgs(){ // avg weight per program week, last 8 with data
-  const buckets={};
-  state.weights.forEach(p=>{
-    const wk=Math.floor((parseISO(p.d)-parseISO(state.start))/(7*864e5));
-    (buckets[wk]=buckets[wk]||[]).push(p.w);
-  });
-  return Object.keys(buckets).map(Number).sort((a,b)=>a-b)
-    .map(wk=>({wk, avg:buckets[wk].reduce((a,b)=>a+b,0)/buckets[wk].length})).slice(-8);
+
+/* ---------------- toast ---------------- */
+let toastT=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent='✓ '+msg; t.classList.remove('on'); void t.offsetWidth; t.classList.add('on');
+  clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove('on'),1900);
 }
 
 /* ---------------- tabs ---------------- */
@@ -449,8 +557,13 @@ document.getElementById('tabs').addEventListener('click',e=>{
 function showTab(id){
   const hl=NAV_PARENT[id]||id;
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===hl));
-  document.querySelectorAll('section.tab').forEach(s=>s.classList.toggle('on',s.id==='tab-'+id));
+  document.querySelectorAll('section.tab').forEach(s=>{
+    const on=s.id==='tab-'+id;
+    if(on&&!s.classList.contains('on')){ s.classList.remove('on'); void s.offsetWidth; }
+    s.classList.toggle('on',on);
+  });
   if(id==='trend') drawChart();
+  if(id==='today') animateWeight();
   window.scrollTo({top:0});
 }
 
@@ -468,7 +581,21 @@ document.getElementById('startsave').onclick=()=>{
 };
 
 /* ---------------- TODAY ---------------- */
-function planRow(slot,info){
+let weightRaf=null;
+function animateWeight(){
+  const el=document.getElementById('bigweight'); if(!el) return;
+  const to=+el.dataset.w; if(!to) return;
+  if(REDUCED){ el.firstChild.textContent=to.toFixed(1); return; }
+  cancelAnimationFrame(weightRaf);
+  const from=Math.min(180,to+3), start=performance.now(), dur=900;
+  const step=now=>{
+    let p=Math.min(1,(now-start)/dur); p=1-Math.pow(1-p,3);
+    el.firstChild.textContent=(from+(to-from)*p).toFixed(1);
+    if(p<1) weightRaf=requestAnimationFrame(step);
+  };
+  weightRaf=requestAnimationFrame(step);
+}
+function planRow(slot,info,delay){
   const done=(state.done[todayISO()]||{})[slot];
   const rest = info.t==='Rest';
   let sub = info.d||'';
@@ -477,9 +604,9 @@ function planRow(slot,info){
     sub = (DOW===2?rx.tue:rx.thu);
   }
   const adj=wxAdjust(info.kind, slot);
-  const action = info.tab==='train' ? `<button class="btn chipbtn" data-go="train" data-day="${info.k}">Open</button>`
+  const action = info.tab==='train' ? `<button class="btn" data-go="train" data-day="${info.k}">Start</button>`
     : info.tab==='run' ? `<button class="btn ghost" data-go="run">Plan</button>` : '';
-  return `<div class="plan ${slot==='am'&&!rest?'hot':''} ${done?'donetext':''}">
+  return `<div class="plan au ${slot==='am'&&!rest?'hot':''} ${done?'donetext':''}" style="animation-delay:${delay}s">
     ${rest?'<div class="ring on" style="visibility:hidden"></div>':`<button class="ring ${done?'on':''}" data-done="${slot}" aria-label="mark ${slot} session done" aria-pressed="${!!done}">✓</button>`}
     <div style="flex:1;min-width:0">
       <div class="t">${info.t}</div>
@@ -495,7 +622,7 @@ function renderToday(){
     const first=TEMPLATE[parseISO(state.start).getDay()].am;
     document.getElementById('tab-today').innerHTML=`
       <div class="eyebrow"><span>${dayName} · starts ${fmtShort(state.start)}</span><button id="editstart">edit</button></div>
-      <div class="hero">
+      <div class="hero au">
         <div class="hsub">${n===1?'STARTS TOMORROW MORNING':'STARTS IN '+n+' DAYS'}</div>
         <div class="big" style="font-size:26px;margin-top:8px">Day 1: ${first.t}</div>
         <div style="margin-top:10px;font-size:13px;color:var(--hero-sub)">Nothing to train today — set yourself up instead.</div>
@@ -508,15 +635,14 @@ function renderToday(){
           <li><b>Log a starting weigh-in</b> in Trend so the chart has its 180 anchor.</li>
           <li>Runs happen before 8:00 AM in this heat — set the alarm accordingly.</li>
         </ul>
-      </div>
-      <div class="wcard"><p class="sub" style="margin:0">Weeks 1–2 are deliberately easy: 3–4 reps in the tank, learning patterns, no pace-chasing. The soreness from split squats and RDLs will be plenty without maximal loads.</p></div>`;
+      </div>`;
     bindStart(); return;
   }
   const iso=todayISO();
   const pr=state.primer[iso]||[false,false,false,false];
   const prDone=pr.filter(Boolean).length;
   const cw=currentWeight(), a7=avgWindow(7,0), rate=weeklyRate();
-  const bars=weeklyAvgs();
+  const cur=a7!=null?a7:(cw?cw.w:null);
   const f=fuelToday(), tot=fuelTotals(f);
   const wx=wxMode();
   const am=slotCond('am'), pm=slotCond('pm');
@@ -524,52 +650,57 @@ function renderToday(){
     ? (am&&pm?`Run window feels like ${am.feels}° (${am.rain}% rain) · evening ${pm.feels}° (${pm.rain}% rain)`:
        wxFetchFailed?'Live forecast unavailable here — tap a condition.':'Checking the Durham forecast…')
     : 'Manual override — back to Auto at midnight.';
-  const toGo = a7!=null? (a7-160) : cw? (cw.w-160):20;
-  const phase = w<=2 ? `<div class="callout">Weeks 1–2: everything at 3–4 reps in the tank. Expect 3–5 lbs down — mostly water, don’t extrapolate it.</div>`
-    : (w>=6&&w<=7)||(w>=13&&w<=14) ? `<div class="callout warn">Diet-break decision point: two warning signs showing → take a week at ~2,400 maintenance.</div>` : '';
+  const phase = w<=2 ? `<div class="callout au" style="animation-delay:.04s">Weeks 1–2: everything at 3–4 reps in the tank. Expect 3–5 lbs down — mostly water, don’t extrapolate it.</div>`
+    : (w>=6&&w<=7)||(w>=13&&w<=14) ? `<div class="callout warn au" style="animation-delay:.04s">Diet-break decision point: two warning signs showing → take a week at ~2,400 maintenance.</div>` : '';
+  const pct = cur!=null ? Math.max(0,Math.min(1,(180-cur)/20)) : 0;
+  const CIRC=2*Math.PI*40;
   document.getElementById('tab-today').innerHTML=`
-    <div class="eyebrow"><span>${dayName} · Week ${w}</span><button id="editstart">edit start</button></div>
+    <div class="eyebrow au"><span>${dayName} · Week ${w}</span><button id="editstart">edit start</button></div>
     ${phase}
-    <div class="hero">
-      ${cw?`
-      <div style="display:flex;justify-content:space-between;align-items:flex-end">
-        <div><div class="hsub">CURRENT WEIGHT</div><div class="big num" style="margin-top:6px">${cw.w.toFixed(1)}</div></div>
-        <div style="text-align:right">
-          <div style="font-weight:700;font-size:14px" class="mint num">${rate!=null?(rate>=0?'▼ ':'▲ ')+Math.abs(rate).toFixed(1)+' /wk':''}</div>
-          <div style="font-size:11px;color:var(--hero-sub);margin-top:3px" class="num">${Math.max(0,toGo).toFixed(1)} to go</div>
-        </div>
+    ${cur!=null?`
+    <div class="au" style="display:flex;align-items:center;gap:16px;margin-top:14px;animation-delay:.06s">
+      <div style="flex:1">
+        <div class="bignum" id="bigweight" data-w="${cur.toFixed(1)}">${cur.toFixed(1)}<small> lb</small></div>
+        ${rate!=null?`<div class="deltachip num">${rate>=0?'▼':'▲'} ${Math.abs(rate).toFixed(1)} lb this week</div>`:''}
       </div>
-      ${bars.length>1?`<div style="margin-top:16px;display:flex;align-items:flex-end;gap:5px;height:40px">
-        ${bars.map((b,i)=>{const h=Math.max(12,Math.min(100,(b.avg-158)/24*100)); const c=i>=bars.length-3?'var(--mint)':'var(--hero-track)'; return `<div style="flex:1;height:${h}%;background:${c};border-radius:3px"></div>`;}).join('')}
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:9px;font-weight:500;color:#6C7379"><span class="num">wk ${Math.max(1,bars[0].wk+1)} · ${Math.round(bars[0].avg)}</span><span class="num">now · ${bars[bars.length-1].avg.toFixed(1)}</span></div>`:`
-      <div class="hbar" style="margin-top:16px"><i style="width:${Math.max(3,Math.min(100,(180-(a7??(cw?cw.w:180)))/20*100))}%"></i></div>
-      <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:9px;font-weight:500;color:#6C7379"><span>started 180</span><span>goal 160</span></div>`}`:`
+      <svg width="96" height="96" viewBox="0 0 96 96" role="img" aria-label="${Math.round(pct*100)}% to goal">
+        <circle cx="48" cy="48" r="40" fill="none" stroke="var(--track)" stroke-width="8"/>
+        <circle class="ringfg" cx="48" cy="48" r="40" fill="none" stroke="var(--teal)" stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="${CIRC.toFixed(1)}" style="--circ:${CIRC.toFixed(1)};--off:${(CIRC*(1-pct)).toFixed(1)};stroke-dashoffset:var(--off);animation:ringGrow 1.1s .2s ease both" transform="rotate(-90 48 48)"/>
+        <text x="48" y="45" text-anchor="middle" fill="var(--ink)" font-family="Schibsted Grotesk,sans-serif" font-size="20" font-weight="800">${Math.round(pct*100)}%</text>
+        <text x="48" y="60" text-anchor="middle" fill="var(--mut)" font-family="Schibsted Grotesk,sans-serif" font-size="9" font-weight="600">TO GOAL</text>
+      </svg>
+    </div>
+    <div class="au" style="display:flex;justify-content:space-between;margin-top:8px;font-weight:600;font-size:11px;color:var(--mut);animation-delay:.1s"><span>started 180</span><span class="num">goal 160 · ${Math.max(0,cur-160).toFixed(1)} to go</span></div>`
+    :`
+    <div class="hero au" style="animation-delay:.06s">
       <div class="hsub">THE 180 → 160 ARC</div>
       <div class="big" style="font-size:24px;margin-top:8px">Log your first weigh-in</div>
-      <div style="margin-top:8px;font-size:13px;color:var(--hero-sub)">The trend, the weekly rate and the goal date all build from it.</div>
-      <button class="btn" style="margin-top:12px;background:var(--mint);color:#16181A" data-go="trend">Open Trend</button>`}
+      <div style="margin-top:8px;font-size:13px;color:var(--hero-sub)">The ring, the weekly rate and the goal date all build from it.</div>
+      <button class="btn" style="margin-top:12px;background:var(--mint);color:#16181A" data-go="trend">Open Trend</button>
+    </div>`}
+    <div class="au" style="margin-top:22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;animation-delay:.14s">
+      <div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:12px;color:var(--sub)">Calories</span><span class="num" style="font-weight:700;font-size:13px">${tot.c.toLocaleString()}<span style="color:var(--mut);font-weight:500">/1,950</span></span></div>
+        <div class="meter" style="margin-top:7px"><i class="ink" style="width:${Math.min(100,tot.c/CAL_TARGET*100)}%"></i></div></div>
+      <div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:12px;color:var(--sub)">Protein</span><span class="num" style="font-weight:700;font-size:13px">${tot.p}<span style="color:var(--mut);font-weight:500">/180g</span></span></div>
+        <div class="meter" style="margin-top:7px"><i style="width:${Math.min(100,tot.p/PRO_TARGET*100)}%"></i></div></div>
     </div>
-    <div class="stat3">
-      <div class="stat"><div class="l">Calories</div><div class="v">${tot.c.toLocaleString()}</div><div class="n num">${Math.max(0,CAL_TARGET-tot.c)} left</div></div>
-      <div class="stat"><div class="l">Protein</div><div class="v">${tot.p}g</div><div class="n ${tot.p>=175?'t':''}">${Math.min(100,Math.round(tot.p/PRO_TARGET*100))}% hit</div></div>
-      <div class="stat"><div class="l">Water</div><div class="v">${f.w}<span style="font-size:11px;color:var(--sub);font-weight:500"> oz</span></div><div class="n num">${Math.max(0,WATER_GOAL-f.w)} to gallon</div></div>
-    </div>
-    <div class="eyebrow"><span>Weather</span><span class="note" style="text-transform:none;letter-spacing:0;font-weight:500;color:var(--mut)">${wxline}</span></div>
-    <div class="chips">${WX_OPTS.map(o=>`<button data-wx="${o.v}" class="${wx===o.v?'on':''}">${o.l}</button>`).join('')}</div>
-    <div class="eyebrow" style="margin-top:22px"><span>Today’s plan</span></div>
-    ${planRow('am',t.am)}
-    ${planRow('pm',t.pm)}
-    <div class="eyebrow" style="margin-top:22px"><span>Daily primer · 6 min · ${prDone}/4</span></div>
-    <div class="wcard">
+    <div class="eyebrow au" style="animation-delay:.16s"><span>Weather</span><span class="note" style="color:var(--mut)">${wxline}</span></div>
+    <div class="chips au" style="animation-delay:.18s">${WX_OPTS.map(o=>`<button data-wx="${o.v}" class="${wx===o.v?'on':''}">${o.l}</button>`).join('')}</div>
+    <div class="eyebrow au" style="margin-top:22px;animation-delay:.2s"><span>Today’s plan</span></div>
+    ${planRow('am',t.am,.22)}
+    ${planRow('pm',t.pm,.26)}
+    <div class="eyebrow au" style="margin-top:22px;animation-delay:.28s"><span>Daily primer · 6 min · ${prDone}/4</span></div>
+    <div class="wcard au" style="animation-delay:.3s">
       <p class="fine" style="margin-top:0">Every day including Sunday. Before the AM session, or attached to the front of the PM walk.</p>
-      ${PRIMER.map((p,i)=>`<div class="plan" style="border:none;padding:8px 0;margin:0">
+      ${PRIMER.map((p,i)=>`<div class="plan" style="border:none;box-shadow:none;padding:8px 0;margin:0">
         <button class="ring ${pr[i]?'on':''}" data-primer="${i}" aria-label="${p.t}" aria-pressed="${!!pr[i]}">✓</button>
         <div><div class="t" style="font-size:14px;${pr[i]?'color:var(--mut);text-decoration:line-through':''}">${p.t}</div><div class="d">${p.d}</div></div>
       </div>`).join('')}
     </div>`;
   bindStart();
-  if(wx==='auto' && !wxFresh() && !wxFetchFailed) fetchWX().then(()=>renderToday());
+  animateWeight();
+  if(wx==='auto' && !wxFresh() && !wxFetchFailed) fetchWX().then(()=>{ if(document.getElementById('tab-today').classList.contains('on')) renderToday(); });
 }
 function bindStart(){
   const b=document.getElementById('editstart');
@@ -579,57 +710,112 @@ function bindStart(){
   };
 }
 
-/* ---------------- TRAIN ---------------- */
+/* ---------------- TRAIN (guided flow) ---------------- */
 let currentDay = ({1:'A',3:'B',5:'C'})[DOW] || 'A';
+let overrideEx=null;                 // manually chosen current exercise id
+let restEnd=0, restTimer=null;       // rest countdown (in-memory)
+const expanded=new Set();            // exercise ids with the how-to open
 function lastLog(exId){
   const arr=(state.logs[exId]||[]).filter(e=>e.d!==todayISO());
   return arr.length?arr[arr.length-1]:null;
 }
 function todayLog(exId){
-  const arr=state.logs[exId]||[];
-  return arr.find(e=>e.d===todayISO())||null;
+  return (state.logs[exId]||[]).find(e=>e.d===todayISO())||null;
+}
+function loggedSets(ex){ const e=todayLog(ex.id); return e?e.s.filter(s=>s.w!==''||s.r!=='').length:0; }
+function exDone(ex){ return loggedSets(ex)>=ex.sets; }
+function sessInfo(){
+  if(state.sess && state.sess.d===todayISO()) return state.sess;
+  return null;
+}
+function guideBlock(ex){
+  const g=GUIDE[ex.id]; if(!g) return '';
+  return `<div class="guide">
+    <div class="gl">Setup</div><p>${g.s}</p>
+    <div class="gl">Execution</div><p>${g.e}</p>
+    <div class="gl">Money cue</div><p class="cue" style="margin:0">${ex.cue}</p>
+    <div class="gl">Watch for</div><p>${g.m}</p>
+  </div>`;
 }
 function renderTrain(){
   const W=WORKOUTS[currentDay], wk=Math.max(1,weekNum());
-  const doneCount=W.ex.filter(ex=>todayLog(ex.id)).length;
+  const doneCount=W.ex.filter(exDone).length;
   let lb=0;
   W.ex.forEach(ex=>{const e=todayLog(ex.id); if(e&&!ex.unit) e.s.forEach(s=>{lb+=(+s.w||0)*(+s.r||0);});});
-  const rir = wk<=2 ? 'Weeks 1–2: leave 3–4 reps in the tank on everything.' : '1–2 reps in reserve on the final set. Hit the top of the range on all sets → add weight next session.';
-  const hotIdx = W.ex.findIndex(ex=>!todayLog(ex.id));
+  let curIdx=W.ex.findIndex(ex=>ex.id===overrideEx&&!exDone(ex));
+  if(curIdx<0) curIdx=W.ex.findIndex(ex=>!exDone(ex));
+  const sess=sessInfo();
+  const allDone=curIdx<0;
+  const resting=restEnd>Date.now();
+  let curHTML='';
+  if(!allDone){
+    const ex=W.ex[curIdx], done=loggedSets(ex);
+    const prev=lastLog(ex.id);
+    const hitTop = prev && ex.top>0 && prev.s.length>=ex.sets && prev.s.every(s=>+s.r>=ex.top);
+    const prevSet = (todayLog(ex.id)?.s.slice(-1)[0]) || (prev?prev.s[Math.min(done,prev.s.length-1)]:null);
+    const pw=prevSet?prevSet.w:'', prr=prevSet?prevSet.r:'';
+    const prevTxt=prev?('Last ('+fmtShort(prev.d)+'): '+prev.s.map(s=>(s.w!==''&&s.w!=null?s.w+'×':'')+s.r).join(', ')):'No log yet';
+    let cells='';
+    for(let i=0;i<ex.sets;i++){
+      const cls=i<done?'done':(i===done?'cur':'');
+      cells+=`<div class="setcell ${cls}">${i<done?'✓':i+1}</div>`;
+    }
+    curHTML=`<div class="curcard au" style="animation-delay:.1s">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div style="font-weight:700;font-size:17px">${ex.n}</div>
+        <span class="pill now">current</span>
+      </div>
+      <div class="last">Target ${ex.rx} · ${prevTxt} ${hitTop?'<span class="pill hint">add weight today</span>':''}</div>
+      <button class="btn ghost" data-expand="${ex.id}" style="margin-top:9px;padding:6px 12px">${expanded.has(ex.id)?'Hide how-to ▴':'How to do it ▾'}</button>
+      ${expanded.has(ex.id)?guideBlock(ex):''}
+      <div class="setrow">${cells}</div>
+      ${resting?`
+      <div class="restbox" id="restbox">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-weight:700;font-size:13px;color:var(--teal)">Rest · <span id="resttime" class="num"></span></span>
+          <button class="btn ghost" data-skiprest="1" style="padding:4px 10px;font-size:11.5px">Skip</button>
+        </div>
+        <div class="restbar"><i id="restbar" style="width:100%"></i></div>
+      </div>`:`
+      <div class="loginputs">
+        ${ex.unit==='s'?'':`<input type="number" inputmode="decimal" id="cw" placeholder="lb" value="${pw??''}" aria-label="weight">`}
+        <input type="number" inputmode="numeric" id="cr" placeholder="${ex.unit==='s'?'seconds':'reps'}" value="${prr??''}" aria-label="${ex.unit==='s'?'seconds':'reps'}">
+        <button class="btn" data-logset="${ex.id}" style="flex:1.6;padding:12px 0;font-size:14px">Log set ${done+1}</button>
+      </div>`}
+      ${done>0?`<button class="btn ghost" data-undoset="${ex.id}" style="margin-top:10px;padding:5px 11px;font-size:11.5px">undo last set</button>`:''}
+    </div>`;
+  } else {
+    curHTML=`<div class="curcard au" style="animation-delay:.1s;border-color:var(--chip);box-shadow:var(--shadow-sm);text-align:center;background:var(--chip)">
+      <div style="font-weight:800;font-size:17px;color:var(--teal-deep)">✓ ${W.name} done</div>
+      <div class="sub" style="margin-top:4px">${lb.toLocaleString()} lb moved. Log it in Today, then go eat protein.</div>
+    </div>`;
+  }
   document.getElementById('tab-train').innerHTML=`
-    <div class="eyebrow"><span>Week ${wk} · Day ${currentDay}</span></div>
-    <div class="chips">${['A','B','C'].map(k=>`<button data-dayk="${k}" class="${k===currentDay?'on':''}">${k} · ${{A:'Mon',B:'Wed',C:'Fri'}[k]}</button>`).join('')}</div>
-    <div class="hero" style="margin-top:12px">
+    <div class="eyebrow au"><span>Week ${wk} · Day ${currentDay}</span><button data-resetwk="1">↻ Reset today</button></div>
+    <div class="chips au" style="animation-delay:.03s">${['A','B','C'].map(k=>`<button data-dayk="${k}" class="${k===currentDay?'on':''}">${k} · ${{A:'Mon',B:'Wed',C:'Fri'}[k]}</button>`).join('')}</div>
+    <div class="hero au" style="margin-top:12px;animation-delay:.06s">
       <div class="big" style="font-size:24px">${W.name}</div>
-      <div style="margin-top:14px;display:flex;gap:22px">
-        <div><div style="font-weight:800;font-size:20px" class="num">${doneCount}<span style="color:var(--hero-sub);font-size:13px">/${W.ex.length}</span></div><div class="hsub" style="font-size:10px;margin-top:4px">LIFTS LOGGED</div></div>
-        <div><div style="font-weight:800;font-size:20px" class="mint num">${lb.toLocaleString()}</div><div class="hsub" style="font-size:10px;margin-top:4px">LB MOVED</div></div>
+      <div style="margin-top:14px;display:flex;gap:24px">
+        <div><div style="font-weight:800;font-size:21px" class="num">${doneCount}<span style="color:var(--hero-sub);font-size:13px">/${W.ex.length}</span></div><div class="hsub" style="font-size:10px;margin-top:5px">LIFTS DONE</div></div>
+        <div><div style="font-weight:800;font-size:21px" class="num" id="elapsed">${sess?'':'—'}</div><div class="hsub" style="font-size:10px;margin-top:5px">ELAPSED</div></div>
+        <div><div style="font-weight:800;font-size:21px" class="mint num">${lb.toLocaleString()}</div><div class="hsub" style="font-size:10px;margin-top:5px">LB MOVED</div></div>
       </div>
       <div class="hbar" style="margin-top:14px"><i style="width:${Math.round(doneCount/W.ex.length*100)}%"></i></div>
     </div>
-    <p class="fine">${rir} Rest 90 s–2 min on compounds, 60–90 s accessories. Brace every rep: ribs down, navel in, exhale on effort.</p>
-    <div class="wcard">
-      ${W.ex.map((ex,i)=>{
-        const prev=lastLog(ex.id), cur=todayLog(ex.id);
-        const unit=ex.unit||'lb';
-        const hitTop = prev && ex.top>0 && prev.s.length>=ex.sets && prev.s.every(s=>+s.r>=ex.top);
-        const prevTxt = prev ? 'Last ('+fmtShort(prev.d)+'): '+prev.s.map(s=>(s.w!==''&&s.w!=null?s.w+'×':'')+s.r).join(', ') : 'No log yet';
-        let sets='';
-        for(let j=0;j<ex.sets;j++){
-          const sv=cur&&cur.s[j]?cur.s[j]:{w:'',r:''};
-          sets+=`<span class="set">
-            ${ex.unit==='s'?'':`<input type="number" inputmode="decimal" placeholder="${unit}" value="${sv.w??''}" data-ex="${ex.id}" data-set="${j}" data-f="w" aria-label="${ex.n} set ${j+1} weight">
-            <span class="x">×</span>`}
-            <input type="number" inputmode="numeric" placeholder="${ex.unit==='s'?'sec':'reps'}" value="${sv.r??''}" data-ex="${ex.id}" data-set="${j}" data-f="r" aria-label="${ex.n} set ${j+1} ${ex.unit==='s'?'seconds':'reps'}">
-          </span>`;
-        }
-        return `<div class="ex" ${i===hotIdx?'style="background:var(--chip);margin:0 -15px;padding:13px 15px;border-radius:12px;border-bottom:none"':''}>
-          <div class="top"><span class="nm">${ex.n} ${i===hotIdx?'<span class="pill now">now</span>':''}</span><span class="rx">${ex.rx}</span></div>
-          <p class="cue">${ex.cue}</p>
-          <div class="last">${prevTxt} ${hitTop?'<span class="pill hint">add weight today</span>':''}</div>
-          <div class="sets">${sets}</div>
-        </div>`;
-      }).join('')}
+    <p class="fine au" style="animation-delay:.08s">${wk<=2?'Weeks 1–2: leave 3–4 reps in the tank on everything.':'1–2 reps in reserve on the final set. Top of the range on all sets → add weight next session.'} Rest 90 s–2 min compounds, 60–90 s accessories. Brace every rep: ribs down, navel in, exhale on effort.</p>
+    ${curHTML}
+    <div class="au" style="animation-delay:.14s">
+    ${W.ex.map((ex,i)=>{
+      if(i===curIdx) return '';
+      const done=exDone(ex), n=loggedSets(ex);
+      const e=todayLog(ex.id);
+      const sum=e?e.s.map(s=>(s.w!==''?s.w+'×':'')+s.r).join(', '):'';
+      return `<div class="exrow ${done?'done':''}" data-exrow="${ex.id}">
+        <div class="top"><span class="nm">${done?'✓ ':''}${ex.n}</span><span class="rx">${ex.rx}</span></div>
+        ${sum?`<div class="last num">${sum}</div>`:''}
+        ${expanded.has(ex.id)?guideBlock(ex)+(!done?`<button class="btn chipbtn" data-liftnow="${ex.id}" style="margin-top:10px">Lift this now</button>`:''):''}
+      </div>`;
+    }).join('')}
     </div>
     <div class="wcard">
       <h3>Waist rules, always</h3>
@@ -640,18 +826,49 @@ function renderTrain(){
       </ul>
     </div>
     <button class="btn ghost" data-go="run" style="margin:4px 0 12px">Run progression + heat protocol →</button>`;
+  tickRest(); tickElapsed();
 }
-function saveSet(exId, idx, field, val){
+function commitSet(exId){
+  const W=WORKOUTS[currentDay], ex=W.ex.find(x=>x.id===exId); if(!ex) return;
+  const r=document.getElementById('cr')?document.getElementById('cr').value.trim():'';
+  const w=document.getElementById('cw')?document.getElementById('cw').value.trim():'';
+  if(r===''&&w===''){ showToast('Enter the set first'); return; }
   let arr=state.logs[exId]||(state.logs[exId]=[]);
   let entry=arr.find(e=>e.d===todayISO());
   if(!entry){ entry={d:todayISO(),s:[]}; arr.push(entry); }
-  while(entry.s.length<=idx) entry.s.push({w:'',r:''});
-  entry.s[idx][field]=val;
-  if(entry.s.every(s=>s.w===''&&s.r==='')) arr.splice(arr.indexOf(entry),1);
+  entry.s.push({w,r});
+  if(!state.sess||state.sess.d!==todayISO()) state.sess={d:todayISO(),t0:Date.now()};
   save();
+  if(loggedSets(ex)>=ex.sets){ overrideEx=null; showToast(ex.n+' done'); }
+  else { restEnd=Date.now()+90*1000; }
+  renderTrain(); renderHeader();
+}
+function tickRest(){
+  clearInterval(restTimer);
+  if(restEnd<=Date.now()) return;
+  restTimer=setInterval(()=>{
+    const left=Math.max(0,restEnd-Date.now());
+    const el=document.getElementById('resttime'), bar=document.getElementById('restbar');
+    if(!el){ clearInterval(restTimer); return; }
+    const s=Math.ceil(left/1000);
+    el.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+    if(bar) bar.style.width=(left/900)+'%';
+    if(left<=0){ clearInterval(restTimer); restEnd=0; renderTrain(); }
+  },250);
+}
+let elapsedTimer=null;
+function tickElapsed(){
+  clearInterval(elapsedTimer);
+  const sess=sessInfo(); if(!sess) return;
+  const upd=()=>{
+    const el=document.getElementById('elapsed'); if(!el) return;
+    const s=Math.floor((Date.now()-sess.t0)/1000);
+    el.textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0');
+  };
+  upd(); elapsedTimer=setInterval(upd,1000);
 }
 
-/* ---------------- RUN (lives inside Today) ---------------- */
+/* ---------------- RUN ---------------- */
 function renderRun(){
   const w=Math.max(1,weekNum()), rx=runRx(w);
   const phases=[
@@ -673,8 +890,8 @@ function renderRun(){
     </div>
     <div class="eyebrow"><span>Full progression</span></div>
     <div class="wcard">
-      ${phases.map(p=>`<div class="ex" ${p.a?'style="background:var(--chip);margin:0 -15px;padding:13px 15px;border-radius:12px;border-bottom:none"':''}>
-        <div class="top"><span class="nm">${p.r}${p.a?' <span class="pill now">now</span>':''}</span></div>
+      ${phases.map(p=>`<div style="padding:12px 0;border-bottom:1px solid var(--line);${p.a?'background:var(--chip);margin:0 -15px;padding:13px 15px;border-radius:12px;border-bottom:none':''}">
+        <div style="display:flex;justify-content:space-between"><span style="font-weight:700;font-size:15px">${p.r}${p.a?' <span class="pill now">now</span>':''}</span></div>
         <p class="sub" style="margin-top:4px">${p.d}</p></div>`).join('')}
       <p class="fine">Run/walk is not remedial — it’s how the aerobic base gets built without wrecking your knees carrying 180.</p>
     </div>
@@ -692,50 +909,74 @@ function renderRun(){
     <div class="callout">The two rules that matter most: the scheduled workout you do beats the perfect workout you skip — and do not run hard and lift hard in month one. Easy runs stay easy.</div>`;
 }
 
-/* ---------------- EAT (Shop folded in) ---------------- */
+/* ---------------- EAT (quick add, scanner/importer, shop folded in) ---------------- */
+let offResults=[], offPick=null, scanStream=null, scanTimer=null;
+const CAN_SCAN = 'BarcodeDetector' in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+function nutrOf(prod){
+  const nu=prod.nutriments||{};
+  return { k:Math.round(nu['energy-kcal_100g']||0), p:Math.round((nu['proteins_100g']||0)*10)/10 };
+}
 function renderEat(){
+  stopScan(false);
   const f=fuelToday(), tot=fuelTotals(f);
   const left=Math.max(0,CAL_TARGET-tot.c);
   const frac=Math.min(1,tot.c/CAL_TARGET);
-  const CIRC=2*Math.PI*36;
+  const CIRC=2*Math.PI*38;
   const got=GROCERY.reduce((a,c)=>a+c.items.filter(i=>state.grocery.checked[i.id]).length,0);
   const count=GROCERY.reduce((a,c)=>a+c.items.length,0);
-  const proPct=Math.min(100,tot.p/PRO_TARGET*100), wPct=Math.min(100,f.w/WATER_GOAL*100);
   document.getElementById('tab-eat').innerHTML=`
-    <div class="eyebrow"><span>Today’s food</span></div>
-    <div class="hero" style="display:flex;align-items:center;gap:18px">
-      <svg width="86" height="86" viewBox="0 0 86 86" role="img" aria-label="${left} calories left">
-        <circle cx="43" cy="43" r="36" fill="none" stroke="var(--hero-track)" stroke-width="8"/>
-        <circle cx="43" cy="43" r="36" fill="none" stroke="var(--mint)" stroke-width="8" stroke-linecap="round"
-          stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${(CIRC*(1-frac)).toFixed(1)}" transform="rotate(-90 43 43)"/>
-        <text x="43" y="40" text-anchor="middle" fill="var(--hero-ink)" font-family="Schibsted Grotesk,sans-serif" font-size="17" font-weight="800">${left}</text>
-        <text x="43" y="54" text-anchor="middle" fill="var(--hero-sub)" font-family="Schibsted Grotesk,sans-serif" font-size="8" font-weight="600">KCAL LEFT</text>
+    <div class="eyebrow au"><span style="font-size:16px;font-weight:800;letter-spacing:-.02em;text-transform:none;color:var(--ink)">Today’s food</span></div>
+    <div class="hero au" style="display:flex;align-items:center;gap:18px;animation-delay:.05s">
+      <svg width="92" height="92" viewBox="0 0 92 92" role="img" aria-label="${left} calories left">
+        <circle cx="46" cy="46" r="38" fill="none" stroke="var(--hero-track)" stroke-width="8"/>
+        <circle cx="46" cy="46" r="38" fill="none" stroke="var(--mint)" stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="${CIRC.toFixed(1)}" stroke-dashoffset="${(CIRC*(1-frac)).toFixed(1)}" style="transition:stroke-dashoffset .6s ease" transform="rotate(-90 46 46)"/>
+        <text x="46" y="43" text-anchor="middle" fill="var(--hero-ink)" font-family="Schibsted Grotesk,sans-serif" font-size="18" font-weight="800">${left}</text>
+        <text x="46" y="57" text-anchor="middle" fill="var(--hero-sub)" font-family="Schibsted Grotesk,sans-serif" font-size="8.5" font-weight="600">KCAL LEFT</text>
       </svg>
-      <div style="flex:1;display:flex;flex-direction:column;gap:11px">
+      <div style="flex:1;display:flex;flex-direction:column;gap:12px">
         <div><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600"><span style="color:var(--hero-sub)">Protein</span><span class="num">${tot.p}/175–185g</span></div>
-          <div class="hbar" style="margin-top:5px;height:5px"><i style="width:${proPct}%"></i></div></div>
+          <div class="hbar" style="margin-top:5px;height:5px"><i style="width:${Math.min(100,tot.p/PRO_TARGET*100)}%"></i></div></div>
         <div><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600"><span style="color:var(--hero-sub)">Calories</span><span class="num">${tot.c}/1,900–2,000</span></div>
           <div class="hbar" style="margin-top:5px;height:5px"><i style="width:${Math.min(100,tot.c/2000*100)}%;${tot.c>2050?'background:#F08A6E':''}"></i></div></div>
         <div><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600"><span style="color:var(--hero-sub)">Water</span><span class="num">${f.w}/${WATER_GOAL} oz</span></div>
-          <div class="hbar" style="margin-top:5px;height:5px"><i style="width:${wPct}%;background:#8FC6FF"></i></div></div>
+          <div class="hbar" style="margin-top:5px;height:5px"><i style="width:${Math.min(100,f.w/WATER_GOAL*100)}%;background:#8FC6FF"></i></div></div>
       </div>
     </div>
-    <div class="eyebrow"><span>Log meals · tap what you ate</span></div>
-    <div class="wcard">
+    <div class="eyebrow au" style="animation-delay:.08s"><span>Quick add</span></div>
+    <div class="qa au" style="animation-delay:.1s">
+      ${QUICK_ADDS.map((q,i)=>`<button data-qa="${i}"><div class="qn">${q.n}</div><div class="qv num">+${q.c} · ${q.p}g</div></button>`).join('')}
+    </div>
+    <div class="eyebrow au" style="animation-delay:.12s"><span>Scan / import</span></div>
+    <div class="wcard au" style="animation-delay:.13s">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${CAN_SCAN?'<button class="btn" data-scan="1">Scan barcode</button>':''}
+        <span class="fine" style="align-self:center">${CAN_SCAN?'or search the food database:':'Search the Open Food Facts database (camera scanning needs Chrome/Android):'}</span>
+      </div>
+      <video id="scanvideo" playsinline muted></video>
+      <div class="searchrow">
+        <input type="search" id="offq" placeholder="Search a food, or type a barcode…" aria-label="food search">
+        <button class="btn chipbtn" data-search="1">Search</button>
+      </div>
+      <div id="offout"></div>
+    </div>
+    <div class="eyebrow au" style="animation-delay:.15s"><span>Log meals · tap what you ate</span></div>
+    <div class="wcard au" style="animation-delay:.16s">
       ${Object.keys(MEAL_PRESETS).map(k=>{const m=MEAL_PRESETS[k],on=!!f.meals[k];
-        return `<div class="plan" style="border:none;padding:9px 0;margin:0;cursor:pointer" data-meal="${k}" role="button" tabindex="0" aria-pressed="${on}">
+        return `<div class="plan" style="border:none;box-shadow:none;padding:9px 0;margin:0;cursor:pointer" data-meal="${k}" role="button" tabindex="0" aria-pressed="${on}">
           <div class="ring ${on?'on':''}" aria-hidden="true">✓</div>
           <div style="flex:1"><div class="t" style="font-size:14px;${on?'color:var(--mut)':''}">${m.n}</div><div class="d">${m.c} cal · ${m.p}g protein</div></div>
+          <div class="num" style="font-weight:700;font-size:13px;align-self:center">${m.c}</div>
         </div>`;}).join('')}
       <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:11px;margin-top:4px">
         <span class="fine" style="flex:none">Off-plan extra:</span>
-        <span class="set"><input type="number" id="fc" inputmode="numeric" placeholder="cal" aria-label="extra calories"></span>
-        <span class="set"><input type="number" id="fp" inputmode="numeric" placeholder="g pro" aria-label="extra protein grams"></span>
+        <input type="number" id="fc" inputmode="numeric" placeholder="cal" aria-label="extra calories" style="width:70px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 4px;font:700 13px 'Schibsted Grotesk';text-align:center">
+        <input type="number" id="fp" inputmode="numeric" placeholder="g pro" aria-label="extra protein grams" style="width:70px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:7px 4px;font:700 13px 'Schibsted Grotesk';text-align:center">
         <button class="btn chipbtn" data-addfood="1">Add</button>
-        ${f.extra.map((x,i)=>`<button class="btn ghost" data-delextra="${i}" title="tap to remove" style="font-size:11.5px">${x.c} cal · ${x.p}g ✕</button>`).join('')}
+        ${f.extra.map((x,i)=>`<button class="btn ghost" data-delextra="${i}" title="tap to remove" style="font-size:11.5px">${x.n?x.n+' · ':''}${x.c} cal · ${x.p}g ✕</button>`).join('')}
       </div>
     </div>
-    <div class="wcard" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="wcard au" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;animation-delay:.18s">
       <h3 style="flex:none">Water</h3>
       <div style="display:flex;gap:7px;flex:1;justify-content:flex-end;flex-wrap:wrap">
         <button class="btn ghost" data-water="-8" aria-label="remove 8 ounces">−8</button>
@@ -743,23 +984,22 @@ function renderEat(){
         <button class="btn chipbtn" data-water="16">+16 oz</button>
         <button class="btn chipbtn" data-water="32">+32 oz</button>
       </div>
-      <p class="fine" style="width:100%;margin:2px 0 0">${f.w>=WATER_GOAL?'Gallon done — Durham summer handled.':'Gallon minimum. Dehydration reads as hunger and fatigue.'}</p>
     </div>
-    <div class="wcard" style="background:var(--chip);border-color:var(--chip);display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-go="shop" role="button" tabindex="0">
-      <div><div style="font-weight:700;font-size:14px;color:var(--teal-deep)">This week’s list</div>
+    <div class="wcard au" style="background:var(--chip);border-color:var(--chip);display:flex;justify-content:space-between;align-items:center;cursor:pointer;animation-delay:.2s" data-go="shop" role="button" tabindex="0">
+      <div><div style="font-weight:700;font-size:14px;color:var(--teal-deep)">This week’s grocery list</div>
       <div style="font-size:11.5px;font-weight:500;color:var(--teal);margin-top:2px">${count} items · ${got} checked</div></div>
-      <div style="font-weight:600;font-size:20px;color:var(--teal)">→</div>
+      <div style="font-weight:700;font-size:20px;color:var(--teal)">→</div>
     </div>
     <div class="eyebrow"><span>Breakfast · ~450 cal · 42–48g protein</span></div>
-    <div class="wcard">${BREAKFASTS.map(b=>`<div class="ex"><div class="nm" style="font-size:14px">${b.n}</div><p class="sub">${b.d}</p></div>`).join('')}</div>
+    <div class="wcard">${BREAKFASTS.map(b=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-weight:700;font-size:14px">${b.n}</div><p class="sub">${b.d}</p></div>`).join('')}</div>
     <div class="eyebrow"><span>Lunch · ~500 cal · 45g protein</span></div>
-    <div class="wcard"><div class="nm" style="font-weight:700;font-size:14px">The batch cook boxes</div>
+    <div class="wcard"><div style="font-weight:700;font-size:14px">The batch cook boxes</div>
       <p class="sub">8 oz chicken over 1 cup cooked rice with roasted vegetables and a drizzle of olive oil. Cook Sunday — zero-decision fuel on busy days, about $3 a serving.</p></div>
     <div class="eyebrow"><span>Afternoon · ~300 cal · 30–35g protein</span></div>
     <div class="wcard"><ul class="tight">${AFTERNOON.map(a=>`<li>${a}</li>`).join('')}</ul>
       <p class="fine">This slot kills the 4:00 PM pantry raid.</p></div>
     <div class="eyebrow"><span>Dinner · ~650 cal · 48–52g protein · under 30 min</span></div>
-    <div class="wcard">${DINNERS.map(d=>`<div class="ex"><div class="nm" style="font-size:14px">${d.n}</div><p class="sub">${d.d}</p></div>`).join('')}
+    <div class="wcard">${DINNERS.map(d=>`<div style="padding:10px 0;border-bottom:1px solid var(--line)"><div style="font-weight:700;font-size:14px">${d.n}</div><p class="sub">${d.d}</p></div>`).join('')}
       <p class="fine">The real meal of the day, cooked well. Weigh the protein, go light on butter and oil — fats are where 400 calories hide invisibly.</p></div>
     <div class="eyebrow"><span>The flavor arsenal</span></div>
     <div class="wcard">
@@ -769,9 +1009,78 @@ function renderEat(){
     </div>
     <div class="callout">Whole fruit stays, 2–3 servings daily — the deficit needs the volume and the runs need the carbs. Juice is out.</div>
     <div class="callout warn">Alcohol: zero through the cut. That’s 600–1,000 weekly calories gone and better sleep. Tastings and work dinners: taste and spit. Reintroduce deliberately at maintenance around November — a great bottle can celebrate the 160.</div>`;
+  renderOffOut();
+}
+function renderOffOut(){
+  const out=document.getElementById('offout'); if(!out) return;
+  if(offPick){
+    const g=+((document.getElementById('offg')||{}).value)||offPick.g||100;
+    const cal=Math.round(offPick.k*g/100), pro=Math.round(offPick.p*g/100*10)/10;
+    out.innerHTML=`<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:11px">
+      <div style="font-weight:700;font-size:14px">${offPick.name}</div>
+      <div class="fine num">${offPick.k} kcal · ${offPick.p}g protein per 100 g</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap">
+        <input type="number" id="offg" value="${g}" inputmode="numeric" aria-label="grams" style="width:80px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 4px;font:700 14px 'Schibsted Grotesk';text-align:center"><span class="fine">g →</span>
+        <span class="num" style="font-weight:800" id="offcalc">${cal} cal · ${pro}g</span>
+        <button class="btn" data-offadd="1">Add to today</button>
+        <button class="btn ghost" data-offback="1">‹ results</button>
+      </div></div>`;
+    return;
+  }
+  if(offResults.length){
+    out.innerHTML=`<div style="margin-top:10px">${offResults.map((r,i)=>`<div class="offresult" data-pick="${i}">
+      <div style="min-width:0"><div style="font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name}</div>
+      <div class="fine">${r.brand||''}</div></div>
+      <div class="num fine" style="flex:none">${r.k} kcal · ${r.p}g /100g</div>
+    </div>`).join('')}</div>`;
+  } else out.innerHTML='';
+}
+function offSearch(q, attempt){
+  attempt=attempt||1;
+  const out=document.getElementById('offout');
+  out.innerHTML='<p class="fine" style="margin:10px 0 0">Searching'+(attempt>1?' (retrying)':'')+'…</p>';
+  const isBarcode=/^\d{8,14}$/.test(q.replace(/\s/g,''));
+  const url = isBarcode
+    ? 'https://world.openfoodfacts.org/api/v2/product/'+q.replace(/\s/g,'')+'.json?fields=product_name,brands,nutriments,serving_quantity'
+    : 'https://world.openfoodfacts.org/cgi/search.pl?search_terms='+encodeURIComponent(q)+'&search_simple=1&action=process&json=1&page_size=6&fields=product_name,brands,nutriments';
+  fetch(url).then(r=>r.json()).then(j=>{
+    const prods = isBarcode ? (j.product?[j.product]:[]) : (j.products||[]);
+    offResults=prods.map(p=>{const n=nutrOf(p); return {name:p.product_name||'(unnamed)', brand:p.brands||'', k:n.k, p:n.p, g:Math.round(p.serving_quantity)||100};})
+      .filter(r=>r.k>0);
+    offPick=null;
+    if(!offResults.length) out.innerHTML='<p class="fine" style="margin:10px 0 0">Nothing found — try a simpler name or the barcode digits.</p>';
+    else renderOffOut();
+  }).catch(()=>{
+    if(attempt<3){ setTimeout(()=>offSearch(q, attempt+1), 1200*attempt); return; }
+    out.innerHTML='<p class="fine" style="margin:10px 0 0">Couldn’t reach the food database — it rate-limits bursts, so wait a moment and search again. (Inside the claude.ai artifact this feature is blocked entirely; use the github.io app.)</p>';
+  });
+}
+async function startScan(){
+  try{
+    const video=document.getElementById('scanvideo');
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    video.srcObject=scanStream; video.style.display='block'; await video.play();
+    const det=new BarcodeDetector({formats:['ean_13','upc_a','ean_8','upc_e','code_128']});
+    scanTimer=setInterval(async()=>{
+      try{
+        const codes=await det.detect(video);
+        if(codes.length){ const code=codes[0].rawValue; stopScan(true); document.getElementById('offq').value=code; showToast('Barcode '+code); offSearch(code); }
+      }catch(e){}
+    },350);
+  }catch(e){
+    stopScan(true);
+    const out=document.getElementById('offout');
+    if(out) out.innerHTML='<p class="fine" style="margin:10px 0 0">Camera unavailable — type the barcode digits instead.</p>';
+  }
+}
+function stopScan(hide){
+  clearInterval(scanTimer); scanTimer=null;
+  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+  const v=document.getElementById('scanvideo');
+  if(v&&hide){ v.style.display='none'; v.srcObject=null; }
 }
 
-/* ---------------- SHOP (inside Eat) ---------------- */
+/* ---------------- SHOP ---------------- */
 function renderShop(){
   const total=GROCERY.reduce((a,c)=>a+c.items.reduce((b,i)=>b+i.p,0),0);
   const got=GROCERY.reduce((a,c)=>a+c.items.filter(i=>state.grocery.checked[i.id]).length,0);
@@ -816,13 +1125,13 @@ function renderTrend(){
     return `<div class="milestone ${done?'done':next?'next':'todo'}">
       <div class="mk">${done?'✓':next?'◐':''}</div>
       <div style="flex:1;font-weight:700;font-size:14px">${m.l}</div>
-      <div style="font-size:11.5px;font-weight:${next?'600':'500'};color:${next?'var(--teal)':'var(--sub)'}" class="num">${done?'done':next?(cur-m.w).toFixed(1)+' to go':''}</div>
+      <div style="font-size:11.5px;font-weight:${next?'700':'500'};color:${next?'var(--teal)':'var(--sub)'}" class="num">${done?'done':next?(cur-m.w).toFixed(1)+' to go':''}</div>
     </div>`;
   }).join('');
   const goal=estGoalDate();
   document.getElementById('tab-trend').innerHTML=`
-    <div class="eyebrow"><span>Log a weigh-in</span></div>
-    <div class="wcard">
+    <div class="eyebrow au"><span>Log a weigh-in</span></div>
+    <div class="wcard au" style="animation-delay:.03s">
       <div class="weightform">
         <input type="number" id="wval" inputmode="decimal" step="0.1" placeholder="180.0" aria-label="weight in pounds">
         <input type="date" id="wdate" value="${todayISO()}" aria-label="weigh-in date">
@@ -830,7 +1139,7 @@ function renderTrend(){
       </div>
       <p class="sub" ${cls} style="margin-bottom:0;margin-top:10px">${advice}</p>
     </div>
-    <div class="hero">
+    <div class="hero au" style="animation-delay:.06s">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <div class="big num" style="font-size:30px">${latest?latest.w.toFixed(1):'—'}<span style="font-size:14px;color:var(--hero-sub);font-weight:500"> lb</span></div>
         <div style="font-weight:700;font-size:13px" class="mint num">${latest?'−'+(180-latest.w).toFixed(1)+' total':''}</div>
@@ -838,12 +1147,12 @@ function renderTrend(){
       <div class="chartbox" id="chartbox" style="margin-top:8px"><div class="tip" id="tip"></div></div>
       <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;font-weight:500;color:var(--hero-sub)"><span>started 180</span><span>goal 155–162</span></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
-      <div class="stat"><div class="l">Avg rate</div><div class="v">${rate!=null?'−'+Math.abs(rate).toFixed(1):'—'}<span style="font-size:11px;color:var(--sub);font-weight:500"> lb/wk</span></div><div class="n">target 1.5–2</div></div>
-      <div class="stat"><div class="l">Est. goal date</div><div class="v">${goal||'—'}</div><div class="n">${goal?'at current rate':'needs more data'}</div></div>
+    <div class="au" style="display:grid;grid-template-columns:1fr 1fr;gap:11px;animation-delay:.1s">
+      <div class="wcard" style="margin:0"><div style="font-weight:600;font-size:10px;letter-spacing:.04em;color:var(--mut)">AVG RATE</div><div style="font-weight:800;font-size:20px;margin-top:7px" class="num">${rate!=null?'−'+Math.abs(rate).toFixed(1):'—'}<span style="font-size:11px;color:var(--sub);font-weight:500"> lb/wk</span></div><div class="fine" style="margin-top:3px">target 1.5–2</div></div>
+      <div class="wcard" style="margin:0"><div style="font-weight:600;font-size:10px;letter-spacing:.04em;color:var(--mut)">EST. GOAL DATE</div><div style="font-weight:800;font-size:20px;margin-top:7px">${goal||'—'}</div><div class="fine" style="margin-top:3px">${goal?'at current rate':'needs more data'}</div></div>
     </div>
-    <div class="eyebrow"><span>Checkpoints</span></div>
-    ${mrows}
+    <div class="eyebrow au" style="animation-delay:.14s"><span>Checkpoints</span></div>
+    <div class="au" style="animation-delay:.16s">${mrows}</div>
     <div class="wcard scrollx">
       <table class="plain">
         <tr><td class="num" style="width:86px"><b>Week 2</b></td><td class="sub" style="margin:0">3–5 lbs down (water-heavy, expected). Training rhythm established.</td></tr>
@@ -861,7 +1170,7 @@ function renderTrend(){
     const v=parseFloat(document.getElementById('wval').value), d=document.getElementById('wdate').value;
     if(!v||!d) return;
     state.weights=state.weights.filter(p=>p.d!==d);
-    state.weights.push({d,w:v}); save(); renderTrend(); renderToday();
+    state.weights.push({d,w:v}); save(); renderTrend(); renderToday(); showToast('Weigh-in logged');
   };
   document.querySelectorAll('#tab-trend [data-del]').forEach(b=>b.onclick=()=>{
     state.weights=state.weights.filter(p=>p.d!==b.dataset.del); save(); renderTrend(); renderToday();
@@ -869,7 +1178,7 @@ function renderTrend(){
   drawChart();
 }
 
-/* chart inside the dark hero card — single mint series, goal band, hover crosshair */
+/* chart inside the dark hero — mint series, goal band, animated draw, hover crosshair */
 function drawChart(){
   const box=document.getElementById('chartbox'); if(!box) return;
   const ws=[...state.weights].sort((a,b)=>a.d<b.d?-1:1);
@@ -898,8 +1207,7 @@ function drawChart(){
   }
   g+=`<line x1="${L}" x2="${W-R}" y1="${Y(180)}" y2="${Y(180)}" stroke="#3A3E42" stroke-width="1" stroke-dasharray="3 4"/>`;
   const pts=ws.map(p=>[X(parseISO(p.d).getTime()),Y(p.w)]);
-  if(pts.length>1) g+=`<path d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="#5FD3C6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
-  pts.forEach((p,i)=>{ if(i<pts.length-1) g+=`<circle cx="${p[0]}" cy="${p[1]}" r="2.3" fill="#5FD3C6"/>`; });
+  if(pts.length>1) g+=`<path class="trendline" pathLength="300" stroke-dasharray="300" stroke-dashoffset="300" style="animation:drawLine 1.2s .15s ease forwards" d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="#5FD3C6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
   const lp=pts[pts.length-1];
   g+=`<circle cx="${lp[0]}" cy="${lp[1]}" r="4.5" fill="#5FD3C6" stroke="#16181A" stroke-width="2"/>`;
   g+=`<line id="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="#4A4E52" stroke-width="1" visibility="hidden"/>`;
@@ -927,35 +1235,82 @@ function drawChart(){
 /* ---------------- events (delegated) ---------------- */
 function refreshFuelViews(){ renderEat(); renderToday(); renderHeader(); }
 document.addEventListener('click',e=>{
-  const wxb=e.target.closest('[data-wx]');
+  const T=e.target;
+  const wxb=T.closest('[data-wx]');
   if(wxb){ state.wx={d:todayISO(),v:wxb.dataset.wx}; save(); renderToday(); return; }
-  const db=e.target.closest('[data-done]');
-  if(db){ const iso=todayISO(); const d=state.done[iso]||(state.done[iso]={}); d[db.dataset.done]=!d[db.dataset.done]; save(); renderToday(); renderHeader(); return; }
-  const pb=e.target.closest('[data-primer]');
+  const db=T.closest('[data-done]');
+  if(db){ const iso=todayISO(); const d=state.done[iso]||(state.done[iso]={}); d[db.dataset.done]=!d[db.dataset.done]; save(); renderToday(); renderHeader(); if(d[db.dataset.done]) showToast('Session logged'); return; }
+  const pb=T.closest('[data-primer]');
   if(pb){ const iso=todayISO(); const pr=state.primer[iso]||(state.primer[iso]=[false,false,false,false]); pr[+pb.dataset.primer]=!pr[+pb.dataset.primer]; save(); renderToday(); renderHeader(); return; }
-  const wb=e.target.closest('[data-water]');
+  const wb=T.closest('[data-water]');
   if(wb){ const f=fuelToday(); f.w=Math.max(0,f.w + +wb.dataset.water); saveFuel(f); refreshFuelViews(); return; }
-  const mb=e.target.closest('[data-meal]');
-  if(mb){ const f=fuelToday(); f.meals[mb.dataset.meal]=!f.meals[mb.dataset.meal]; saveFuel(f); refreshFuelViews(); return; }
-  if(e.target.closest('[data-addfood]')){
+  const mb=T.closest('[data-meal]');
+  if(mb){ const f=fuelToday(); const k=mb.dataset.meal; f.meals[k]=!f.meals[k]; saveFuel(f); refreshFuelViews(); if(f.meals[k]) showToast(MEAL_PRESETS[k].n+' logged'); return; }
+  const qa=T.closest('[data-qa]');
+  if(qa){ const q=QUICK_ADDS[+qa.dataset.qa]; const f=fuelToday(); f.extra.push({n:q.n,c:q.c,p:q.p}); saveFuel(f); refreshFuelViews(); showToast(q.n+' logged'); return; }
+  if(T.closest('[data-addfood]')){
     const c=Math.round(+document.getElementById('fc').value)||0, p=Math.round(+document.getElementById('fp').value)||0;
-    if(c>0||p>0){ const f=fuelToday(); f.extra.push({c,p}); saveFuel(f); refreshFuelViews(); }
+    if(c>0||p>0){ const f=fuelToday(); f.extra.push({c,p}); saveFuel(f); refreshFuelViews(); showToast('Logged'); }
     return;
   }
-  const xb=e.target.closest('[data-delextra]');
+  const xb=T.closest('[data-delextra]');
   if(xb){ const f=fuelToday(); f.extra.splice(+xb.dataset.delextra,1); saveFuel(f); refreshFuelViews(); return; }
-  const go=e.target.closest('[data-go]');
+  if(T.closest('[data-scan]')){ startScan(); return; }
+  if(T.closest('[data-search]')){ const q=document.getElementById('offq').value.trim(); if(q) offSearch(q); return; }
+  const pk=T.closest('[data-pick]');
+  if(pk){ offPick=offResults[+pk.dataset.pick]; renderOffOut(); return; }
+  if(T.closest('[data-offback]')){ offPick=null; renderOffOut(); return; }
+  if(T.closest('[data-offadd]')){
+    if(offPick){
+      const g=+((document.getElementById('offg')||{}).value)||100;
+      const f=fuelToday();
+      f.extra.push({n:offPick.name.slice(0,28), c:Math.round(offPick.k*g/100), p:Math.round(offPick.p*g/100)});
+      saveFuel(f); offPick=null; refreshFuelViews(); showToast('Added from database');
+    } return;
+  }
+  const ls=T.closest('[data-logset]');
+  if(ls){ commitSet(ls.dataset.logset); return; }
+  if(T.closest('[data-skiprest]')){ restEnd=0; renderTrain(); return; }
+  const us=T.closest('[data-undoset]');
+  if(us){
+    const arr=state.logs[us.dataset.undoset]||[];
+    const entry=arr.find(x=>x.d===todayISO());
+    if(entry){ entry.s.pop(); if(!entry.s.length) arr.splice(arr.indexOf(entry),1); save(); }
+    restEnd=0; renderTrain(); return;
+  }
+  if(T.closest('[data-resetwk]')){
+    if(confirm('Clear everything logged for today’s workout?')){
+      WORKOUTS[currentDay].ex.forEach(ex=>{
+        const arr=state.logs[ex.id]||[];
+        const i=arr.findIndex(x=>x.d===todayISO());
+        if(i>=0) arr.splice(i,1);
+      });
+      overrideEx=null; restEnd=0; save(); renderTrain();
+    } return;
+  }
+  const ln=T.closest('[data-liftnow]');
+  if(ln){ overrideEx=ln.dataset.liftnow; renderTrain(); return; }
+  const xp=T.closest('[data-expand]');
+  if(xp){ const id=xp.dataset.expand; expanded.has(id)?expanded.delete(id):expanded.add(id); renderTrain(); return; }
+  const er=T.closest('[data-exrow]');
+  if(er){ const id=er.dataset.exrow; expanded.has(id)?expanded.delete(id):expanded.add(id); renderTrain(); return; }
+  const go=T.closest('[data-go]');
   if(go){ if(go.dataset.day){ currentDay=go.dataset.day; renderTrain(); } showTab(go.dataset.go); return; }
-  const dk=e.target.closest('[data-dayk]');
-  if(dk){ currentDay=dk.dataset.dayk; renderTrain(); }
+  const dk=T.closest('[data-dayk]');
+  if(dk){ currentDay=dk.dataset.dayk; overrideEx=null; renderTrain(); }
 });
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.gro){ state.grocery.checked[t.dataset.gro]=t.checked; save(); renderShop(); renderEat(); }
 });
 document.addEventListener('input',e=>{
-  const t=e.target;
-  if(t.dataset.ex) saveSet(t.dataset.ex,+t.dataset.set,t.dataset.f,t.value);
+  if(e.target.id==='offg'){
+    const g=+e.target.value||0, el=document.getElementById('offcalc');
+    if(offPick&&el) el.textContent=Math.round(offPick.k*g/100)+' cal · '+(Math.round(offPick.p*g/100*10)/10)+'g';
+  }
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&e.target.id==='offq'){ const q=e.target.value.trim(); if(q) offSearch(q); }
 });
 
 /* ---------------- boot ---------------- */
