@@ -251,7 +251,7 @@
 const KEY='durham-coach-v1';
 const state = load();
 function load(){
-  try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.start) return s; }catch(e){}
+  try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.start){ delete s.wxData; if(s.wx&&s.wx.v==='auto') delete s.wx; return s; } }catch(e){}
   return { start:'2026-07-13', primer:{}, done:{}, logs:{}, weights:[], grocery:{week:null,checked:{}} };
 }
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
@@ -424,36 +424,14 @@ const BREAKFASTS=[
 ];
 const AFTERNOON=['Whey shake with a banana','Cottage cheese + berries + black pepper (trust the pepper)','Two hard-boiled eggs + a piece of fruit','Half a can of tuna with mustard on crackers or toast'];
 
-/* ---------------- weather ---------------- */
-const WX_OPTS=[{v:'auto',l:'Auto'},{v:'clear',l:'Clear'},{v:'rain',l:'Rain'},{v:'heat90',l:'HI 90+'},{v:'heat100',l:'HI 100+'}];
-const WX_URL='https://api.open-meteo.com/v1/forecast?latitude=35.994&longitude=-78.8986&hourly=apparent_temperature,precipitation_probability&temperature_unit=fahrenheit&timezone=America%2FNew_York&forecast_days=1';
-let wxFetchFailed=false;
-function wxMode(){ return (state.wx && state.wx.d===todayISO()) ? state.wx.v : 'auto'; }
-function wxFresh(){ return state.wxData && state.wxData.day===todayISO() && (Date.now()-state.wxData.t)<60*60*1000; }
-function fetchWX(){
-  if(wxFresh()||wxFetchFailed) return Promise.resolve(false);
-  return fetch(WX_URL).then(r=>r.json()).then(j=>{
-    state.wxData={t:Date.now(), day:todayISO(), feels:j.hourly.apparent_temperature, rain:j.hourly.precipitation_probability};
-    save(); return true;
-  }).catch(()=>{ wxFetchFailed=true; return false; });
-}
-function slotCond(slot){
-  const d=state.wxData; if(!d||d.day!==todayISO()) return null;
-  const hrs = slot==='am' ? [6,7] : [20,21];
-  const feels=Math.max(...hrs.map(h=>d.feels[h]??-99));
-  const rain=Math.max(...hrs.map(h=>d.rain[h]??0));
-  const cond = rain>=50 ? 'rain' : feels>=100 ? 'heat100' : feels>=90 ? 'heat90' : 'clear';
-  return {feels:Math.round(feels), rain, cond};
-}
+/* ---------------- weather (manual — no API) ---------------- */
+const WX_OPTS=[{v:'clear',l:'Clear'},{v:'rain',l:'Rain'},{v:'heat90',l:'HI 90+'},{v:'heat100',l:'HI 100+'}];
+function wxMode(){ return (state.wx && state.wx.d===todayISO()) ? state.wx.v : 'clear'; }
 function wxAdjust(kind, slot){
   if(!kind||kind==='indoor'||kind==='rest') return '';
-  const mode=wxMode();
-  let cond=mode, why='';
-  if(mode==='auto'){
-    const c=slotCond(slot); if(!c) return '';
-    cond=c.cond; why=` Forecast for the ${slot==='am'?'run window':'evening'}: feels like ${c.feels}°, ${c.rain}% chance of rain.`;
-  }
+  const cond=wxMode();
   if(cond==='clear') return '';
+  const why='';
   let msg='';
   if(kind==='walk'){
     if(cond==='rain')    msg='Rain — take it inside: 35 min on the treadmill at a 5–10% incline with a podcast does the exact same job.';
@@ -623,11 +601,7 @@ function renderToday(){
   const cur=a7!=null?a7:(cw?cw.w:null);
   const f=fuelToday(), tot=fuelTotals(f);
   const wx=wxMode();
-  const am=slotCond('am'), pm=slotCond('pm');
-  const wxline = wx==='auto'
-    ? (am&&pm?`Run window feels like ${am.feels}° (${am.rain}% rain) · evening ${pm.feels}° (${pm.rain}% rain)`:
-       wxFetchFailed?'Live forecast unavailable here — tap a condition.':'Checking the Durham forecast…')
-    : 'Manual override — back to Auto at midnight.';
+  const wxline = wx==='clear' ? 'Rough out? Tap it — sessions below adjust.' : 'Adjusted for today — resets to Clear at midnight.';
   const phase = w<=2 ? `<div class="callout au" style="animation-delay:.04s">Weeks 1–2: everything at 3–4 reps in the tank. Expect 3–5 lbs down — mostly water, don’t extrapolate it.</div>`
     : (w>=6&&w<=7)||(w>=13&&w<=14) ? `<div class="callout warn au" style="animation-delay:.04s">Diet-break decision point: two warning signs showing → take a week at ~2,400 maintenance.</div>` : '';
   const pct = cur!=null ? Math.max(0,Math.min(1,(180-cur)/20)) : 0;
@@ -678,7 +652,6 @@ function renderToday(){
     </div>`;
   bindStart();
   animateWeight();
-  if(wx==='auto' && !wxFresh() && !wxFetchFailed) fetchWX().then(()=>{ if(document.getElementById('tab-today').classList.contains('on')) renderToday(); });
 }
 function bindStart(){
   const b=document.getElementById('editstart');
