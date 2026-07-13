@@ -21,35 +21,12 @@
     --shadow:0 1px 2px rgba(16,24,26,.05),0 12px 28px -18px rgba(16,24,26,.25);
     --shadow-sm:0 1px 2px rgba(16,24,26,.04);
   }
-  @media (prefers-color-scheme: dark){
-    :root{
-      --canvas:#131415; --card:#1D1F21; --line:#2A2D30; --line2:#33373B;
-      --ink:#F2F3F4; --sub:#9AA0A6; --mut:#6E747A;
-      --teal:#2FB3A8; --teal-hi:#5FD3C6; --teal-deep:#5FD3C6; --chip:#17322F; --mint:#5FD3C6;
-      --hero:#0E1011; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
-      --track:#2A2D30; --warn:#E0A33C; --crit:#E66767;
-      --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -18px rgba(0,0,0,.5);
-      --shadow-sm:0 1px 2px rgba(0,0,0,.25);
-    }
+  /* the Cadence design commits to one theme: light canvas, dark hero cards —
+     tokens stay identical in dark mode and under the viewer's theme toggle */
+  :root[data-theme="dark"], :root[data-theme="light"]{
+    --canvas:#FBFBFA; --card:#ffffff; --ink:#16181A;
   }
-  :root[data-theme="light"]{
-    --canvas:#FBFBFA; --card:#ffffff; --line:#EDEEEF; --line2:#E2E4E5;
-    --ink:#16181A; --sub:#8A9096; --mut:#A2A7AC;
-    --teal:#0E7C74; --teal-hi:#12A093; --teal-deep:#0E5C56; --chip:#E4F1EF; --mint:#5FD3C6;
-    --hero:#16181A; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
-    --track:#EBECED; --warn:#B26A00; --crit:#C23434;
-    --shadow:0 1px 2px rgba(16,24,26,.05),0 12px 28px -18px rgba(16,24,26,.25);
-    --shadow-sm:0 1px 2px rgba(16,24,26,.04);
-  }
-  :root[data-theme="dark"]{
-    --canvas:#131415; --card:#1D1F21; --line:#2A2D30; --line2:#33373B;
-    --ink:#F2F3F4; --sub:#9AA0A6; --mut:#6E747A;
-    --teal:#2FB3A8; --teal-hi:#5FD3C6; --teal-deep:#5FD3C6; --chip:#17322F; --mint:#5FD3C6;
-    --hero:#0E1011; --hero-ink:#ffffff; --hero-sub:#8F979E; --hero-track:#2B2E31;
-    --track:#2A2D30; --warn:#E0A33C; --crit:#E66767;
-    --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 28px -18px rgba(0,0,0,.5);
-    --shadow-sm:0 1px 2px rgba(0,0,0,.25);
-  }
+  :root{ color-scheme: light; }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{background:var(--canvas);color:var(--ink);
@@ -599,6 +576,7 @@ function planRow(slot,info,delay){
   const done=(state.done[todayISO()]||{})[slot];
   const rest = info.t==='Rest';
   let sub = info.d||'';
+  if(info.tab==='train') sub = WORKOUTS[info.k].ex.length+' lifts · 45–60 min';
   if(info.tab==='run'){
     const rx=runRx(Math.max(1,weekNum()));
     sub = (DOW===2?rx.tue:rx.thu);
@@ -765,8 +743,8 @@ function renderTrain(){
         <div style="font-weight:700;font-size:17px">${ex.n}</div>
         <span class="pill now">current</span>
       </div>
-      <div class="last">Target ${ex.rx} · ${prevTxt} ${hitTop?'<span class="pill hint">add weight today</span>':''}</div>
-      <button class="btn ghost" data-expand="${ex.id}" style="margin-top:9px;padding:6px 12px">${expanded.has(ex.id)?'Hide how-to ▴':'How to do it ▾'}</button>
+      <div class="last">Target ${ex.rx} · ${prevTxt} ${hitTop?'<span class="pill hint">add weight today</span>':''}
+        · <button data-expand="${ex.id}" style="background:none;border:none;cursor:pointer;padding:0;font:600 12px 'Schibsted Grotesk';color:var(--teal)">${expanded.has(ex.id)?'hide how-to ▴':'how to do it ▾'}</button></div>
       ${expanded.has(ex.id)?guideBlock(ex):''}
       <div class="setrow">${cells}</div>
       ${resting?`
@@ -780,8 +758,8 @@ function renderTrain(){
       <div class="loginputs">
         ${ex.unit==='s'?'':`<input type="number" inputmode="decimal" id="cw" placeholder="lb" value="${pw??''}" aria-label="weight">`}
         <input type="number" inputmode="numeric" id="cr" placeholder="${ex.unit==='s'?'seconds':'reps'}" value="${prr??''}" aria-label="${ex.unit==='s'?'seconds':'reps'}">
-        <button class="btn" data-logset="${ex.id}" style="flex:1.6;padding:12px 0;font-size:14px">Log set ${done+1}</button>
-      </div>`}
+      </div>
+      <button class="btn wide" data-logset="${ex.id}" id="logbtn" style="margin-top:12px">Log set ${done+1}${ex.unit==='s'?'':(pw?' · '+pw+' lb':'')}</button>`}
       ${done>0?`<button class="btn ghost" data-undoset="${ex.id}" style="margin-top:10px;padding:5px 11px;font-size:11.5px">undo last set</button>`:''}
     </div>`;
   } else {
@@ -800,7 +778,6 @@ function renderTrain(){
         <div><div style="font-weight:800;font-size:21px" class="num" id="elapsed">${sess?'':'—'}</div><div class="hsub" style="font-size:10px;margin-top:5px">ELAPSED</div></div>
         <div><div style="font-weight:800;font-size:21px" class="mint num">${lb.toLocaleString()}</div><div class="hsub" style="font-size:10px;margin-top:5px">LB MOVED</div></div>
       </div>
-      <div class="hbar" style="margin-top:14px"><i style="width:${Math.round(doneCount/W.ex.length*100)}%"></i></div>
     </div>
     <p class="fine au" style="animation-delay:.08s">${wk<=2?'Weeks 1–2: leave 3–4 reps in the tank on everything.':'1–2 reps in reserve on the final set. Top of the range on all sets → add weight next session.'} Rest 90 s–2 min compounds, 60–90 s accessories. Brace every rep: ribs down, navel in, exhale on effort.</p>
     ${curHTML}
@@ -1118,38 +1095,50 @@ function renderTrend(){
   else advice=`Down ${rate.toFixed(1)} lbs/wk — right in the 1.5–2 pocket. Change nothing.`;
   const cur = a7!=null?a7:(latest?latest.w:null);
   const miles=[{w:175,l:'175 lb'},{w:170,l:'170 lb'},{w:165,l:'165 lb'},{w:160,l:'160 lb · goal'}];
+  const sorted=[...state.weights].sort((a,b)=>a.d<b.d?-1:1);
+  function hitWeek(mw){ // week the milestone was first reached
+    const p=sorted.find(p=>p.w<=mw); if(!p) return '';
+    return 'Wk '+Math.max(1,Math.floor((parseISO(p.d)-parseISO(state.start))/(7*864e5))+1);
+  }
+  function etaMonth(mw){ // rough month at the current rate
+    if(rate==null||rate<0.3||cur==null) return '';
+    const d=new Date(); d.setDate(d.getDate()+Math.round((cur-mw)/rate*7));
+    return d.toLocaleDateString(undefined,{month:'short'});
+  }
   let nextFound=false;
   const mrows = miles.map(m=>{
     const done = cur!=null && cur<=m.w;
     const next = !done && !nextFound && cur!=null; if(next) nextFound=true;
+    const right = done?hitWeek(m.w):next?(cur-m.w).toFixed(1)+' to go':etaMonth(m.w);
     return `<div class="milestone ${done?'done':next?'next':'todo'}">
       <div class="mk">${done?'✓':next?'◐':''}</div>
       <div style="flex:1;font-weight:700;font-size:14px">${m.l}</div>
-      <div style="font-size:11.5px;font-weight:${next?'700':'500'};color:${next?'var(--teal)':'var(--sub)'}" class="num">${done?'done':next?(cur-m.w).toFixed(1)+' to go':''}</div>
+      <div style="font-size:11.5px;font-weight:${next?'700':'500'};color:${next?'var(--teal)':'var(--sub)'}" class="num">${right}</div>
     </div>`;
   }).join('');
   const goal=estGoalDate();
   document.getElementById('tab-trend').innerHTML=`
-    <div class="eyebrow au"><span>Log a weigh-in</span></div>
-    <div class="wcard au" style="animation-delay:.03s">
-      <div class="weightform">
-        <input type="number" id="wval" inputmode="decimal" step="0.1" placeholder="180.0" aria-label="weight in pounds">
-        <input type="date" id="wdate" value="${todayISO()}" aria-label="weigh-in date">
-        <button class="btn" id="wadd">Log</button>
-      </div>
-      <p class="sub" ${cls} style="margin-bottom:0;margin-top:10px">${advice}</p>
-    </div>
+    <div class="eyebrow au"><span style="font-size:20px;font-weight:800;letter-spacing:-.02em;text-transform:none;color:var(--ink)">Trend</span><span class="note">since ${fmtShort(state.start)}</span></div>
     <div class="hero au" style="animation-delay:.06s">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <div class="big num" style="font-size:30px">${latest?latest.w.toFixed(1):'—'}<span style="font-size:14px;color:var(--hero-sub);font-weight:500"> lb</span></div>
         <div style="font-weight:700;font-size:13px" class="mint num">${latest?'−'+(180-latest.w).toFixed(1)+' total':''}</div>
       </div>
       <div class="chartbox" id="chartbox" style="margin-top:8px"><div class="tip" id="tip"></div></div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;font-weight:500;color:var(--hero-sub)"><span>started 180</span><span>goal 155–162</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;font-weight:500;color:var(--hero-sub)"><span>Wk 1 · 180</span><span>goal 160</span></div>
     </div>
     <div class="au" style="display:grid;grid-template-columns:1fr 1fr;gap:11px;animation-delay:.1s">
       <div class="wcard" style="margin:0"><div style="font-weight:600;font-size:10px;letter-spacing:.04em;color:var(--mut)">AVG RATE</div><div style="font-weight:800;font-size:20px;margin-top:7px" class="num">${rate!=null?'−'+Math.abs(rate).toFixed(1):'—'}<span style="font-size:11px;color:var(--sub);font-weight:500"> lb/wk</span></div><div class="fine" style="margin-top:3px">target 1.5–2</div></div>
       <div class="wcard" style="margin:0"><div style="font-weight:600;font-size:10px;letter-spacing:.04em;color:var(--mut)">EST. GOAL DATE</div><div style="font-weight:800;font-size:20px;margin-top:7px">${goal||'—'}</div><div class="fine" style="margin-top:3px">${goal?'at current rate':'needs more data'}</div></div>
+    </div>
+    <div class="eyebrow au" style="animation-delay:.12s"><span>Log a weigh-in</span></div>
+    <div class="wcard au" style="animation-delay:.13s">
+      <div class="weightform">
+        <input type="number" id="wval" inputmode="decimal" step="0.1" placeholder="180.0" aria-label="weight in pounds">
+        <input type="date" id="wdate" value="${todayISO()}" aria-label="weigh-in date">
+        <button class="btn" id="wadd">Log</button>
+      </div>
+      <p class="sub" ${cls} style="margin-bottom:0;margin-top:10px">${advice}</p>
     </div>
     <div class="eyebrow au" style="animation-delay:.14s"><span>Checkpoints</span></div>
     <div class="au" style="animation-delay:.16s">${mrows}</div>
@@ -1190,26 +1179,16 @@ function drawChart(){
   const t0=parseISO(ws[0].d).getTime();
   const t1=Math.max(parseISO(ws[ws.length-1].d).getTime(), t0+14*864e5);
   const vals=ws.map(p=>p.w);
-  const yMax=Math.max(...vals,181)+1, yMin=Math.min(...vals,155)-2;
+  const yMax=Math.max(...vals,180)+1, yMin=Math.min(...vals,160)-1;
   const X=t=>L+(t-t0)/(t1-t0)*(W-L-R);
   const Y=v=>T+(yMax-v)/(yMax-yMin)*(H-T-B);
   let g='';
-  g+=`<rect x="${L}" y="${Y(162)}" width="${W-L-R}" height="${Y(155)-Y(162)}" fill="rgba(95,211,198,.12)"/>`;
-  g+=`<text x="${W-R-4}" y="${Y(162)+12}" text-anchor="end" font-size="9" fill="#5FD3C6" font-weight="700">GOAL 155–162</text>`;
-  for(let v=Math.ceil(yMin/5)*5; v<=yMax; v+=5){
-    g+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#2B2E31" stroke-width="1"/>`;
-    g+=`<text x="${L-6}" y="${Y(v)+3}" text-anchor="end" font-size="9" fill="#6C7379" style="font-variant-numeric:tabular-nums">${v}</text>`;
-  }
-  const span=t1-t0, n=Math.min(4,Math.max(1,ws.length));
-  for(let i=0;i<=n;i++){
-    const t=t0+span*i/n, d=new Date(t);
-    g+=`<text x="${X(t)}" y="${H-6}" text-anchor="middle" font-size="9" fill="#6C7379">${d.toLocaleDateString(undefined,{month:'short',day:'numeric'})}</text>`;
-  }
-  g+=`<line x1="${L}" x2="${W-R}" y1="${Y(180)}" y2="${Y(180)}" stroke="#3A3E42" stroke-width="1" stroke-dasharray="3 4"/>`;
+  // the arc to beat: a straight dashed line from the 180 start to the 160 goal
+  g+=`<line x1="${L}" y1="${Y(180)}" x2="${W-R}" y2="${Y(160)}" stroke="#2B2E31" stroke-width="1" stroke-dasharray="3 3"/>`;
   const pts=ws.map(p=>[X(parseISO(p.d).getTime()),Y(p.w)]);
-  if(pts.length>1) g+=`<path class="trendline" pathLength="300" stroke-dasharray="300" stroke-dashoffset="300" style="animation:drawLine 1.2s .15s ease forwards" d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="#5FD3C6" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if(pts.length>1) g+=`<path class="trendline" pathLength="300" stroke-dasharray="300" stroke-dashoffset="300" style="animation:drawLine 1.2s .15s ease forwards" d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="#5FD3C6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
   const lp=pts[pts.length-1];
-  g+=`<circle cx="${lp[0]}" cy="${lp[1]}" r="4.5" fill="#5FD3C6" stroke="#16181A" stroke-width="2"/>`;
+  g+=`<circle cx="${lp[0]}" cy="${lp[1]}" r="4.5" fill="#5FD3C6"/>`;
   g+=`<line id="xh" x1="0" x2="0" y1="${T}" y2="${H-B}" stroke="#4A4E52" stroke-width="1" visibility="hidden"/>`;
   box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Weight trend from ${ws[0].w} to ${ws[ws.length-1].w} pounds">${g}</svg><div class="tip"></div>`;
   const svg=box.querySelector('svg'), xh=svg.querySelector('#xh'), tip=box.querySelector('.tip');
@@ -1304,6 +1283,10 @@ document.addEventListener('change',e=>{
   if(t.dataset.gro){ state.grocery.checked[t.dataset.gro]=t.checked; save(); renderShop(); renderEat(); }
 });
 document.addEventListener('input',e=>{
+  if(e.target.id==='cw'){
+    const b=document.getElementById('logbtn');
+    if(b){ const base=b.textContent.split(' · ')[0]; b.textContent=e.target.value?base+' · '+e.target.value+' lb':base; }
+  }
   if(e.target.id==='offg'){
     const g=+e.target.value||0, el=document.getElementById('offcalc');
     if(offPick&&el) el.textContent=Math.round(offPick.k*g/100)+' cal · '+(Math.round(offPick.p*g/100*10)/10)+'g';
