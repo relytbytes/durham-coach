@@ -1,5 +1,5 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cadence — 180 to 160</title>
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
@@ -49,7 +49,8 @@
     .meter i,.hbar i{transition:none}
   }
 
-  header.app{position:sticky;top:0;z-index:20;background:var(--canvas);margin:0 -18px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+  header.app{position:sticky;top:0;z-index:20;background:var(--canvas);margin:0 -18px;
+    padding:calc(16px + env(safe-area-inset-top, 0px)) 18px 12px;border-bottom:1px solid var(--line)}
   .brand{display:flex;justify-content:space-between;align-items:center}
   .lockup{display:flex;align-items:center;gap:9px}
   .lockup .word{font-weight:800;font-size:17px;letter-spacing:-.03em}
