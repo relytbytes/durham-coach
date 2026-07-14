@@ -1070,7 +1070,7 @@ function renderRun(){
     <div class="eyebrow"><span>Run history</span></div>
     <div class="wcard">
       ${[...runs].map((r,i)=>({r,i})).reverse().slice(0,10).map(({r,i})=>`<div class="runrow" data-runview="${i}">
-        <div><div style="font-weight:700;font-size:14px">${fmtShort(r.d)}${r.pts?'':' · manual'}</div></div>
+        <div><div style="font-weight:700;font-size:14px">${fmtShort(r.d)}${r.src?' · ⌚ '+r.src:(r.pts?'':' · manual')}</div></div>
         <div class="num fine">${r.mi.toFixed(2)} mi · ${fmtDur(r.dur)} · ${fmtPace(r.dur/r.mi)}</div>
       </div>`).join('')}
     </div>
@@ -1577,6 +1577,63 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.id==='offq'){ const q=e.target.value.trim(); if(q) offSearch(q); }
 });
 
+/* ---------------- Apple Health sync (native shell only — no-op on the web) ---------------- */
+function HK(){
+  const C=window.Capacitor;
+  return (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins && C.Plugins.HealthPlugin) || null;
+}
+let hkSyncing=false;
+async function healthSync(){
+  const hk=HK(); if(!hk||hkSyncing) return;
+  hkSyncing=true;
+  try{
+    const av=await hk.isHealthAvailable(); if(!av.available) return;
+    await hk.requestHealthPermissions({permissions:['READ_WORKOUTS','READ_ACTIVE_CALORIES','READ_ROUTE','READ_DISTANCE']});
+    const now=new Date();
+    // today's active burn from the Watch
+    try{
+      const dayStart=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+      const agg=await hk.queryAggregated({startDate:dayStart.toISOString(), endDate:now.toISOString(), dataType:'active-calories', bucket:'day'});
+      const rows=agg.aggregatedData||agg.aggregated||agg.samples||[];
+      const kcal=Math.round(rows.reduce((a,b)=>a+(+b.value||0),0));
+      if(kcal>0){ if(!state.burn) state.burn={}; state.burn[todayISO()]=kcal; }
+    }catch(e){}
+    // workouts from the last 14 days: runs (with routes) + strength sessions
+    const res=await hk.queryWorkouts({startDate:new Date(Date.now()-14*864e5).toISOString(), endDate:now.toISOString(), includeHeartRate:false, includeRoute:true, includeSteps:false});
+    if(!state.runs) state.runs=[];
+    let added=0;
+    (res.workouts||[]).forEach(w=>{
+      const type=(w.workoutType||'').toLowerCase();
+      const startD=new Date(w.startDate); if(isNaN(startD)) return;
+      const iso=isoOf(startD);
+      const key=w.id||('hk-'+w.startDate);
+      const dayAm=(TEMPLATE[startD.getDay()]||{}).am||{};
+      if(type.includes('run')){
+        if(state.runs.some(r=>r.hk===key)) return;
+        let dur=+w.duration||Math.round((new Date(w.endDate)-startD)/1000);
+        if(dur>50000) dur=Math.round(dur/1000);              // defensive: ms vs s
+        let mi=+w.distance||0; if(mi>100) mi=mi/1609.34;      // defensive: meters vs miles
+        if(!mi||!dur) return;
+        let pts=(w.route&&w.route.length>1)? w.route.map(p=>[+p.lat.toFixed(5),+p.lng.toFixed(5)]) : null;
+        if(pts&&pts.length>240){ const st=Math.ceil(pts.length/240); pts=pts.filter((_,i)=>i%st===0||i===pts.length-1); }
+        state.runs.push({d:iso, dur, mi:+mi.toFixed(2), splits:[], pts, hk:key, src:w.sourceName||'Apple Health'});
+        const dn=state.done[iso]||(state.done[iso]={});
+        if(dayAm.kind==='run') dn.am=true;
+        added++;
+      } else if(type.includes('strength')||type.includes('functional')||type.includes('cross training')){
+        const dn=state.done[iso]||(state.done[iso]={});
+        if(dayAm.tab==='train'&&!dn.am){ dn.am=true; added++; }
+      }
+    });
+    state.runs.sort((a,b)=>a.d<b.d?-1:1);
+    save();
+    if(added){ showToast('Synced '+added+' from Apple Health'); renderAll(); }
+    else { renderHeader(); renderToday(); }
+  }catch(e){}
+  finally{ hkSyncing=false; }
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) healthSync(); });
+
 /* ---------------- boot ---------------- */
 /* Apple Watch bridge: a Shortcut can open ?burn=<active kcal> and it lands here */
 (function(){
@@ -1590,4 +1647,5 @@ if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostn
 }
 function renderAll(){ renderHeader(); renderToday(); renderTrain(); renderRun(); renderEat(); renderShop(); renderTrend(); }
 renderAll();
+healthSync();
 </script>
