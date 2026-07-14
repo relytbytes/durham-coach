@@ -284,7 +284,7 @@ function load(){
   try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.start) return s; }catch(e){}
   return { start:'2026-07-13', primer:{}, done:{}, logs:{}, weights:[], grocery:{week:null,checked:{}} };
 }
-function save(){ localStorage.setItem(KEY, JSON.stringify(state)); }
+function save(){ localStorage.setItem(KEY, JSON.stringify(state)); if(typeof scheduleWidgetPush==='function') scheduleWidgetPush(); }
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------------- dates ---------------- */
@@ -1749,6 +1749,33 @@ function closePhoto(){
   img.src=''; v.style.display='none'; pvOpenId=null;
 }
 
+/* ---------------- home-screen widgets (native shell only — no-op on the web) ---------------- */
+let widgetT=null;
+function scheduleWidgetPush(){ clearTimeout(widgetT); widgetT=setTimeout(pushWidgetData,1500); }
+function pushWidgetData(){
+  try{
+    const C=window.Capacitor;
+    const WB=C&&C.isNativePlatform&&C.isNativePlatform()&&C.Plugins&&C.Plugins.WidgetBridge;
+    if(!WB) return;
+    const iso=todayISO(), t=TEMPLATE[DOW], f=fuelToday(), tot=fuelTotals(f);
+    const cw=currentWeight(), a7=avgWindow(7,0);
+    const cur=a7!=null?a7:(cw?cw.w:null);
+    const dn=state.done[iso]||{};
+    const rate=weeklyRate();
+    const wxOn=!!(wxAdjust(t.am.kind,'am')||wxAdjust(t.pm.kind,'pm'));
+    WB.set({json: JSON.stringify({
+      w: cur!=null?+cur.toFixed(1):0,
+      pct: cur!=null?Math.round(Math.max(0,Math.min(1,(180-cur)/20))*100):0,
+      delta: rate!=null?+rate.toFixed(1):0,
+      streak: streak(), wk: Math.max(1,weekNum()),
+      amT: t.am.t, amDone: !!dn.am, pmT: t.pm.t, pmDone: !!dn.pm,
+      wx: wxOn,
+      cal: tot.c, calT: CAL_TARGET, pro: tot.p, proT: PRO_TARGET,
+      water: f.w, waterT: WATER_GOAL, updated: Date.now()
+    })}).catch(()=>{});
+  }catch(e){}
+}
+
 /* ---------------- Apple Health sync (native shell only — no-op on the web) ---------------- */
 function HK(){
   const C=window.Capacitor;
@@ -1823,4 +1850,5 @@ document.getElementById('pvdel').onclick=()=>{ if(pvOpenId!=null&&confirm('Delet
 function renderAll(){ renderHeader(); renderToday(); renderTrain(); renderRun(); renderEat(); renderShop(); renderTrend(); renderPhotos(); }
 renderAll();
 healthSync();
+scheduleWidgetPush();
 </script>
