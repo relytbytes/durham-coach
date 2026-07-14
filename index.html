@@ -261,6 +261,7 @@
 <nav class="tabs" id="tabs" aria-label="Sections">
   <button data-tab="today" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>Today</button>
   <button data-tab="train"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6M7 8v8M17 8v8M20 9v6M7 12h10"/></svg>Train</button>
+  <button data-tab="run"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21c-1.7 0-3-1.3-3-3s1.3-3 3-3h13c1.7 0 3-1.3 3-3s-1.3-3-3-3H10"/><circle cx="6.5" cy="5" r="2.2" fill="currentColor" stroke="none"/></svg>Run</button>
   <button data-tab="eat"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v6a2 2 0 0 0 4 0V3M8 9v12M16 21V3c-2 1-2 7 0 8"/></svg>Eat</button>
   <button data-tab="trend"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V6M4 20h16M8 15l3-4 3 2 4-6"/></svg>Trend</button>
 </nav>
@@ -556,7 +557,7 @@ function showToast(msg){
 }
 
 /* ---------------- tabs ---------------- */
-const NAV_PARENT={run:'today', shop:'eat'};
+const NAV_PARENT={shop:'eat'};
 document.getElementById('tabs').addEventListener('click',e=>{
   const b=e.target.closest('button'); if(!b)return;
   showTab(b.dataset.tab);
@@ -571,6 +572,7 @@ function showTab(id){
   });
   if(id==='trend') drawChart();
   if(id==='today') animateWeight();
+  if(id==='run'&&spCfg().tok) setTimeout(spNow,250);
   window.scrollTo({top:0});
 }
 
@@ -826,6 +828,7 @@ function renderTrain(){
       </div>
     </div>
     <p class="fine au" style="animation-delay:.08s">${wk<=2?'Weeks 1–2: leave 3–4 reps in the tank on everything.':'1–2 reps in reserve on the final set. Top of the range on all sets → add weight next session.'} Rest 90 s–2 min compounds, 60–90 s accessories. Brace every rep: ribs down, navel in, exhale on effort.</p>
+    ${(state.spotify&&state.spotify.pl&&state.spotify.pl.lift)?`<button class="btn chipbtn au" data-spopen="lift" style="margin:0 0 6px">▶ Lift playlist</button>`:''}
     ${curHTML}
     <div class="au" style="animation-delay:.14s">
     ${W.ex.map((ex,i)=>{
@@ -1231,10 +1234,10 @@ function renderRun(){
       <button class="btn ghost" data-rundel="${selectedRun}" style="margin-top:10px;font-size:11.5px">delete this run</button>
     </div>`:''}`:'';
   document.getElementById('tab-run').innerHTML=`
-    <button class="back" data-go="today">‹ Today</button>
     <div class="eyebrow"><span>Log a run</span></div>
     ${liveHTML}
     ${timerHTML}
+    ${musicCard('run')}
     ${plannerHTML}
     ${histHTML}
     <div class="eyebrow"><span>This week · ${rx.phase}</span></div>
@@ -1270,8 +1273,18 @@ function renderRun(){
 }
 
 /* ---------------- EAT (quick add, scanner/importer, shop folded in) ---------------- */
-let offResults=[], offPick=null, scanStream=null, scanTimer=null;
-const CAN_SCAN = 'BarcodeDetector' in window && navigator.mediaDevices && navigator.mediaDevices.getUserMedia;
+let offResults=[], offPick=null, scanStream=null, scanTimer=null, zxingReader=null;
+const CAN_SCAN = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+function loadZXing(){
+  return new Promise(res=>{
+    if(window.ZXing) return res(true);
+    const s=document.createElement('script');
+    s.src='https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js';
+    s.onload=()=>res(!!window.ZXing); s.onerror=()=>res(false);
+    document.head.appendChild(s);
+    setTimeout(()=>res(!!window.ZXing),8000);
+  });
+}
 function nutrOf(prod){
   const nu=prod.nutriments||{};
   return { k:Math.round(nu['energy-kcal_100g']||0), p:Math.round((nu['proteins_100g']||0)*10)/10 };
@@ -1311,7 +1324,7 @@ function renderEat(){
     <div class="wcard au" style="animation-delay:.13s">
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${CAN_SCAN?'<button class="btn" data-scan="1">Scan barcode</button>':''}
-        <span class="fine" style="align-self:center">${CAN_SCAN?'or search the food database:':'Search the Open Food Facts database (camera scanning needs Chrome/Android):'}</span>
+        <span class="fine" style="align-self:center">${CAN_SCAN?'or search the food database:':'Search the Open Food Facts database:'}</span>
       </div>
       <video id="scanvideo" playsinline muted></video>
       <div class="searchrow">
@@ -1415,26 +1428,45 @@ function offSearch(q, attempt){
     out.innerHTML='<p class="fine" style="margin:10px 0 0">Couldn’t reach the food database — it rate-limits bursts, so wait a moment and search again. (Inside the claude.ai artifact this feature is blocked entirely; use the github.io app.)</p>';
   });
 }
+function scanHit(code){
+  stopScan(true);
+  const q=document.getElementById('offq'); if(q) q.value=code;
+  showToast('Barcode '+code);
+  offSearch(code);
+}
 async function startScan(){
+  const video=document.getElementById('scanvideo');
   try{
-    const video=document.getElementById('scanvideo');
-    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
-    video.srcObject=scanStream; video.style.display='block'; await video.play();
-    const det=new BarcodeDetector({formats:['ean_13','upc_a','ean_8','upc_e','code_128']});
-    scanTimer=setInterval(async()=>{
-      try{
-        const codes=await det.detect(video);
-        if(codes.length){ const code=codes[0].rawValue; stopScan(true); document.getElementById('offq').value=code; showToast('Barcode '+code); offSearch(code); }
-      }catch(e){}
-    },350);
+    if('BarcodeDetector' in window){
+      scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+      video.srcObject=scanStream; video.style.display='block'; await video.play();
+      const det=new BarcodeDetector({formats:['ean_13','upc_a','ean_8','upc_e','code_128']});
+      scanTimer=setInterval(async()=>{
+        try{
+          const codes=await det.detect(video);
+          if(codes.length) scanHit(codes[0].rawValue);
+        }catch(e){}
+      },350);
+    } else {
+      setRpInfoSafe('offout','Loading scanner…');
+      const ok=await loadZXing();
+      if(!ok){ setRpInfoSafe('offout','Scanner library unreachable — type the barcode digits instead.'); return; }
+      setRpInfoSafe('offout','');
+      video.style.display='block';
+      zxingReader=new ZXing.BrowserMultiFormatReader();
+      zxingReader.decodeFromVideoDevice(undefined, video, (res,err)=>{
+        if(res) scanHit(res.getText());
+      });
+    }
   }catch(e){
     stopScan(true);
-    const out=document.getElementById('offout');
-    if(out) out.innerHTML='<p class="fine" style="margin:10px 0 0">Camera unavailable — type the barcode digits instead.</p>';
+    setRpInfoSafe('offout','Camera unavailable — allow camera access in Settings, or type the barcode digits.');
   }
 }
+function setRpInfoSafe(id,html){ const el=document.getElementById(id); if(el) el.innerHTML=html?'<p class="fine" style="margin:10px 0 0">'+html+'</p>':''; }
 function stopScan(hide){
   clearInterval(scanTimer); scanTimer=null;
+  if(zxingReader){ try{ zxingReader.reset(); }catch(e){} zxingReader=null; }
   if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
   const v=document.getElementById('scanvideo');
   if(v&&hide){ v.style.display='none'; v.srcObject=null; }
@@ -1720,6 +1752,24 @@ document.addEventListener('click',e=>{
   if(rv){ selectedRun=+rv.dataset.runview; renderRun(); return; }
   const rd=T.closest('[data-rundel]');
   if(rd){ if(confirm('Delete this run?')){ state.runs.splice(+rd.dataset.rundel,1); selectedRun=-1; save(); renderRun(); } return; }
+  const spo=T.closest('[data-spopen]');
+  if(spo){ const url=spCfg().pl[spo.dataset.spopen]; if(url) window.open(url,'_blank'); return; }
+  if(T.closest('[data-spconnect]')){ spLogin(); return; }
+  if(T.closest('[data-spdisc]')){ spCfg().tok=null; save(); renderRun(); return; }
+  if(T.closest('[data-spsave]')){
+    const sp=spCfg();
+    sp.pl.run=(document.getElementById('sprun').value||'').trim();
+    sp.pl.lift=(document.getElementById('splift').value||'').trim();
+    sp.cid=(document.getElementById('spcid').value||'').trim();
+    save(); showToast('Music settings saved'); renderRun(); renderTrain(); return;
+  }
+  if(T.closest('[data-spplay]')){
+    const el=document.getElementById('spnow');
+    const playing=el&&el.dataset.playing==='1';
+    spApi('/me/player/'+(playing?'pause':'play'),'PUT').then(()=>setTimeout(spNow,450));
+    return;
+  }
+  if(T.closest('[data-spnext]')){ spApi('/me/player/next','POST').then(()=>setTimeout(spNow,600)); return; }
   if(T.closest('[data-rploc]')){
     if(!navigator.geolocation){ setRpInfo('No location available here.'); return; }
     setRpInfo('Getting your location…');
@@ -1777,6 +1827,92 @@ document.addEventListener('input',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.id==='offq'){ const q=e.target.value.trim(); if(q) offSearch(q); }
 });
+
+/* ---------------- Spotify: playlist deep-links + PKCE connect (now playing, controls) ---------------- */
+function spCfg(){ if(!state.spotify) state.spotify={cid:'',pl:{run:'',lift:''},tok:null}; return state.spotify; }
+const SP_SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing';
+const SP_HTTP=location.protocol==='https:'||location.protocol==='http:';
+function spRedirect(){ return location.origin+location.pathname; }
+async function spLogin(){
+  const sp=spCfg();
+  if(!sp.cid){ showToast('Paste your Spotify client ID first (Spotify setup)'); return; }
+  const v=[...crypto.getRandomValues(new Uint8Array(48))].map(b=>('0'+b.toString(16)).slice(-2)).join('');
+  localStorage.setItem('sp_verifier',v);
+  const dig=await crypto.subtle.digest('SHA-256', new TextEncoder().encode(v));
+  const ch=btoa(String.fromCharCode(...new Uint8Array(dig))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  location.href='https://accounts.spotify.com/authorize?client_id='+encodeURIComponent(sp.cid)
+    +'&response_type=code&redirect_uri='+encodeURIComponent(spRedirect())
+    +'&scope='+encodeURIComponent(SP_SCOPES)+'&code_challenge_method=S256&code_challenge='+ch;
+}
+async function spExchange(code){
+  const sp=spCfg(), v=localStorage.getItem('sp_verifier');
+  localStorage.removeItem('sp_verifier');
+  if(!v||!sp.cid) return;
+  try{
+    const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({grant_type:'authorization_code',code,redirect_uri:spRedirect(),client_id:sp.cid,code_verifier:v})});
+    const j=await r.json();
+    if(j.access_token){ sp.tok={at:j.access_token,rt:j.refresh_token,exp:Date.now()+(j.expires_in-60)*1000}; save(); showToast('Spotify connected'); }
+  }catch(e){}
+}
+async function spToken(){
+  const sp=spCfg(); if(!sp.tok) return null;
+  if(Date.now()<sp.tok.exp) return sp.tok.at;
+  try{
+    const r=await fetch('https://accounts.spotify.com/api/token',{method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:new URLSearchParams({grant_type:'refresh_token',refresh_token:sp.tok.rt,client_id:sp.cid})});
+    const j=await r.json();
+    if(j.access_token){ sp.tok={at:j.access_token,rt:j.refresh_token||sp.tok.rt,exp:Date.now()+(j.expires_in-60)*1000}; save(); return sp.tok.at; }
+  }catch(e){}
+  return null;
+}
+async function spApi(path,method){
+  const t=await spToken(); if(!t) return null;
+  try{
+    const r=await fetch('https://api.spotify.com/v1'+path,{method:method||'GET',headers:{Authorization:'Bearer '+t}});
+    if(r.status===403){ showToast('Playback control needs Spotify Premium'); return null; }
+    if(r.status===204) return {};
+    return await r.json();
+  }catch(e){ return null; }
+}
+async function spNow(){
+  const el=document.getElementById('spnow'); if(!el) return;
+  const j=await spApi('/me/player/currently-playing');
+  if(!j||!j.item){ el.innerHTML='<span class="fine">Nothing playing — start Spotify anywhere, controls work from here.</span>'; el.dataset.playing='0'; return; }
+  el.innerHTML='<div style="font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+    +(j.is_playing?'♫ ':'⏸ ')+j.item.name+'</div><div class="fine" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+    +j.item.artists.map(a=>a.name).join(', ')+'</div>';
+  el.dataset.playing=j.is_playing?'1':'0';
+}
+function musicCard(context){
+  const sp=spCfg();
+  const inputStyle="border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:9px 10px;font:600 13px 'Schibsted Grotesk';width:100%";
+  return `
+  <div class="eyebrow"><span>Music</span>${sp.tok?'<button data-spdisc>disconnect</button>':''}</div>
+  <div class="wcard">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      ${sp.pl.run?`<button class="btn" data-spopen="run">▶ Run playlist</button>`:''}
+      ${sp.pl.lift?`<button class="btn chipbtn" data-spopen="lift">▶ Lift playlist</button>`:''}
+      ${!sp.tok&&SP_HTTP?`<button class="btn ghost" data-spconnect>Connect Spotify</button>`:''}
+      ${!sp.pl.run&&!sp.pl.lift&&!SP_HTTP?'<span class="fine">Add playlists below — they open the Spotify app.</span>':''}
+    </div>
+    ${sp.tok?`<div style="display:flex;align-items:center;gap:9px;margin-top:11px">
+      <div id="spnow" style="flex:1;min-width:0"><span class="fine">…</span></div>
+      <button class="btn chipbtn" data-spplay aria-label="play or pause" style="font-size:15px">⏯</button>
+      <button class="btn chipbtn" data-spnext aria-label="next track" style="font-size:15px">⏭</button>
+    </div>`:''}
+    <details style="margin-top:10px"><summary class="fine" style="cursor:pointer">Spotify setup</summary>
+      <div style="display:flex;flex-direction:column;gap:7px;margin-top:9px">
+        <input id="sprun" placeholder="Run playlist link (open.spotify.com/playlist/…)" value="${sp.pl.run||''}" style="${inputStyle}">
+        <input id="splift" placeholder="Lift playlist link" value="${sp.pl.lift||''}" style="${inputStyle}">
+        <input id="spcid" placeholder="Spotify client ID (only needed for Connect)" value="${sp.cid||''}" style="${inputStyle}">
+        <button class="btn chipbtn" data-spsave style="align-self:flex-start">Save</button>
+        <p class="fine" style="margin:0">Playlist buttons just open the Spotify app — paste any playlist or album link. For now-playing + controls: create a free app at developer.spotify.com/dashboard, add <b>${spRedirect()}</b> as a Redirect URI, paste its client ID here, Save, then Connect. Controls need Spotify Premium. Connect works on the github.io / web version${SP_HTTP?'':' — not inside this installed app (playlist buttons still work here)'}.</p>
+      </div></details>
+  </div>`;
+}
 
 /* ---------------- progress photos (IndexedDB — too big for localStorage) ---------------- */
 let photoURLs=[], pvOpenId=null;
@@ -1933,6 +2069,15 @@ async function healthSync(){
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) healthSync(); });
 
 /* ---------------- boot ---------------- */
+/* Spotify PKCE redirect lands back here with ?code= */
+(function(){
+  const q=new URLSearchParams(location.search);
+  const code=q.get('code');
+  if(code&&localStorage.getItem('sp_verifier')){
+    history.replaceState(null,'',location.pathname);
+    spExchange(code).then(()=>{ renderRun(); if(spCfg().tok) setTimeout(spNow,400); });
+  }
+})();
 /* Apple Watch bridge: a Shortcut can open ?burn=<active kcal> and it lands here */
 (function(){
   const q=new URLSearchParams(location.search);
