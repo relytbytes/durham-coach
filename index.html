@@ -196,6 +196,16 @@
     white-space:nowrap;z-index:50;display:none;animation:toastIn .3s ease both}
   .toast.on{display:block}
 
+  .runstats{display:flex;gap:24px;margin-top:6px}
+  .runstats .v{font-weight:800;font-size:26px;line-height:1;font-variant-numeric:tabular-nums}
+  .runstats .l{font-weight:600;font-size:10px;letter-spacing:.05em;color:var(--mut);text-transform:uppercase;margin-top:5px}
+  #runmap{height:220px;border-radius:14px;overflow:hidden;margin-top:12px;background:var(--track)}
+  #runmap svg{display:block;width:100%;height:100%}
+  .timerbig{font-weight:800;font-size:52px;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums;text-align:center}
+  .timerseg{text-align:center;font-weight:700;font-size:15px;margin-top:8px}
+  .timernext{text-align:center;font-size:12px;color:var(--sub);margin-top:4px}
+  .runrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
+  .runrow:last-child{border-bottom:none}
   .searchrow{display:flex;gap:8px;margin-top:10px}
   .searchrow input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:10px;
     padding:10px 12px;font:600 14px 'Schibsted Grotesk',system-ui}
@@ -663,6 +673,7 @@ function renderToday(){
       <div><div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:12px;color:var(--sub)">Protein</span><span class="num" style="font-weight:700;font-size:13px">${tot.p}<span style="color:var(--mut);font-weight:500">/180g</span></span></div>
         <div class="meter" style="margin-top:7px"><i style="width:${Math.min(100,tot.p/PRO_TARGET*100)}%"></i></div></div>
     </div>
+    ${state.burn&&state.burn[iso]?`<p class="fine au num" style="margin:8px 0 0;animation-delay:.15s">⌚ Watch: ${state.burn[iso]} cal active burn synced today</p>`:''}
     <div class="eyebrow au" style="animation-delay:.16s"><span>Weather</span><span class="note" style="color:var(--mut)">${wxline}</span></div>
     <div class="chips au" style="animation-delay:.18s">${WX_OPTS.map(o=>`<button data-wx="${o.v}" class="${wx===o.v?'on':''}">${o.l}</button>`).join('')}</div>
     <div class="eyebrow au" style="margin-top:22px;animation-delay:.2s"><span>Today’s plan</span></div>
@@ -845,6 +856,157 @@ function tickElapsed(){
   upd(); elapsedTimer=setInterval(upd,1000);
 }
 
+/* ---------------- RUN: GPS tracker, interval timer, history ---------------- */
+function fmtDur(s){ s=Math.round(s); const h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=s%60;
+  return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(ss).padStart(2,'0'); }
+function fmtPace(secPerMi){ if(!isFinite(secPerMi)||secPerMi<=0) return '—'; return fmtDur(secPerMi)+' /mi'; }
+function hav(a,b){ const R=6371000,toR=x=>x*Math.PI/180;
+  const dLat=toR(b.lat-a.lat), dLon=toR(b.lon-a.lon);
+  const s=Math.sin(dLat/2)**2+Math.cos(toR(a.lat))*Math.cos(toR(b.lat))*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s)); }
+
+const gps={on:false,paused:false,watch:null,pts:[],dist:0,t0:0,tPaused:0,pauseAt:0,wake:null,err:''};
+let gpsTick=null, selectedRun=-1;
+function gpsElapsed(){ return gps.on ? (Date.now()-gps.t0-gps.tPaused-(gps.paused?Date.now()-gps.pauseAt:0))/1000 : 0; }
+async function gpsStart(){
+  if(!navigator.geolocation){ showToast('No GPS available here'); return; }
+  gps.on=true; gps.paused=false; gps.pts=[]; gps.dist=0; gps.t0=Date.now(); gps.tPaused=0; gps.err='';
+  try{ gps.wake=await navigator.wakeLock.request('screen'); }catch(e){}
+  gps.watch=navigator.geolocation.watchPosition(p=>{
+    if(gps.paused) return;
+    const c=p.coords; if(c.accuracy>40) return;
+    const pt={t:Date.now(), lat:c.latitude, lon:c.longitude};
+    const last=gps.pts[gps.pts.length-1];
+    if(last){
+      const d=hav(last,pt), dt=(pt.t-last.t)/1000;
+      if(d<2) return;                 // GPS jitter
+      if(dt>0 && d/dt>8) return;      // faster than ~3:20/mi = glitch
+      gps.dist+=d;
+    }
+    gps.pts.push(pt);
+  }, e=>{ gps.err=e.code===1?'Location permission denied — allow it in Settings, or log the run manually.':'GPS signal lost — still trying.'; renderRunLive(); },
+  {enableHighAccuracy:true, maximumAge:1000, timeout:20000});
+  clearInterval(gpsTick); gpsTick=setInterval(renderRunLive,1000);
+  renderRun();
+}
+function gpsPause(){ if(!gps.on) return; if(gps.paused){ gps.tPaused+=Date.now()-gps.pauseAt; gps.paused=false; } else { gps.paused=true; gps.pauseAt=Date.now(); } renderRun(); }
+function gpsStop(discard){
+  navigator.geolocation.clearWatch(gps.watch); clearInterval(gpsTick);
+  try{ gps.wake&&gps.wake.release(); }catch(e){}
+  const mi=gps.dist/1609.34, dur=gpsElapsed();
+  gps.on=false;
+  if(discard || mi<0.05){ if(!discard) showToast('Too short to save'); renderRun(); return; }
+  // per-mile splits + a downsampled trace
+  const splits=[]; let acc=0, nextMi=1, lastT=gps.t0;
+  for(let i=1;i<gps.pts.length;i++){
+    acc+=hav(gps.pts[i-1],gps.pts[i]);
+    if(acc>=nextMi*1609.34){ splits.push(Math.round((gps.pts[i].t-lastT)/1000)); lastT=gps.pts[i].t; nextMi++; }
+  }
+  const step=Math.max(1,Math.ceil(gps.pts.length/240));
+  const trace=gps.pts.filter((_,i)=>i%step===0||i===gps.pts.length-1).map(p=>[+p.lat.toFixed(5),+p.lon.toFixed(5)]);
+  if(!state.runs) state.runs=[];
+  state.runs.push({d:todayISO(), dur:Math.round(dur), mi:+mi.toFixed(2), splits, pts:trace});
+  const iso=todayISO(); const dn=state.done[iso]||(state.done[iso]={}); if(TEMPLATE[DOW].am.kind==='run') dn.am=true;
+  save(); selectedRun=state.runs.length-1;
+  showToast('Run saved · '+mi.toFixed(2)+' mi'); renderRun(); renderToday(); renderHeader();
+}
+function renderRunLive(){
+  const t=document.getElementById('rl-time'), d=document.getElementById('rl-dist'), p=document.getElementById('rl-pace'), e=document.getElementById('rl-err');
+  if(!t) return;
+  const el=gpsElapsed(), mi=gps.dist/1609.34;
+  t.textContent=fmtDur(el); d.textContent=mi.toFixed(2); p.textContent=mi>0.02?fmtPace(el/mi):'—';
+  if(e) e.textContent=gps.err;
+}
+
+/* guided interval timer — the week's run structure with beeps */
+const timer={on:false,segs:[],idx:0,segEnd:0,paused:false,pauseAt:0,int:null,ctx:null};
+function timerPlan(w){
+  if(w<=2) return {label:'8 × (run 2:00 / walk 1:00)', segs:Array.from({length:8},()=>[{n:'Run',s:120,h:1},{n:'Walk',s:60,h:0}]).flat()};
+  if(w<=4) return {label:'6 × (run 4:00 / walk 1:00)', segs:Array.from({length:6},()=>[{n:'Run',s:240,h:1},{n:'Walk',s:60,h:0}]).flat()};
+  const reps=w<=8?6:8;
+  return {label:'10:00 easy · '+reps+' × (1:00 hard / 2:00 walk) · 5:00 cooldown',
+    segs:[{n:'Warm up easy',s:600,h:0}].concat(Array.from({length:reps},()=>[{n:'HARD',s:60,h:1},{n:'Walk it off',s:120,h:0}]).flat(),[{n:'Cooldown',s:300,h:0}])};
+}
+function beep(hard){
+  try{
+    timer.ctx=timer.ctx||new (window.AudioContext||window.webkitAudioContext)();
+    timer.ctx.resume();
+    [0,0.3].forEach(off=>{
+      const o=timer.ctx.createOscillator(), g=timer.ctx.createGain();
+      o.type='square'; o.frequency.value=hard?880:440;
+      g.gain.setValueAtTime(.25,timer.ctx.currentTime+off);
+      g.gain.exponentialRampToValueAtTime(.001,timer.ctx.currentTime+off+.22);
+      o.connect(g); g.connect(timer.ctx.destination);
+      o.start(timer.ctx.currentTime+off); o.stop(timer.ctx.currentTime+off+.25);
+    });
+  }catch(e){}
+  if(navigator.vibrate) navigator.vibrate(hard?[200,80,200]:200);
+}
+function timerStart(){
+  const plan=timerPlan(Math.max(1,weekNum()));
+  timer.on=true; timer.segs=plan.segs; timer.idx=0; timer.paused=false;
+  timer.segEnd=Date.now()+plan.segs[0].s*1000;
+  beep(plan.segs[0].h);
+  clearInterval(timer.int); timer.int=setInterval(timerTick,250);
+  renderRun();
+}
+function timerTick(){
+  if(!timer.on||timer.paused) return;
+  const left=timer.segEnd-Date.now();
+  if(left<=0){
+    timer.idx++;
+    if(timer.idx>=timer.segs.length){ timerStop(); showToast('Session done — nice work'); return; }
+    const s=timer.segs[timer.idx];
+    timer.segEnd=Date.now()+s.s*1000; beep(s.h);
+    renderRun(); return;
+  }
+  const el=document.getElementById('t-count'); if(el) el.textContent=fmtDur(left/1000);
+}
+function timerPause(){ if(timer.paused){ timer.segEnd+=Date.now()-timer.pauseAt; timer.paused=false; } else { timer.paused=true; timer.pauseAt=Date.now(); } renderRun(); }
+function timerSkip(){ timer.segEnd=Date.now(); }
+function timerStop(){ timer.on=false; clearInterval(timer.int); renderRun(); }
+
+/* route map: Leaflet + OSM where the network allows, SVG trace otherwise */
+let leafMap=null;
+function loadLeaflet(){
+  return new Promise(res=>{
+    if(window.L) return res(true);
+    const l=document.createElement('link'); l.rel='stylesheet'; l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css'; document.head.appendChild(l);
+    const s=document.createElement('script'); s.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+    s.onload=()=>res(true); s.onerror=()=>res(false);
+    document.head.appendChild(s);
+    setTimeout(()=>res(!!window.L),5000);
+  });
+}
+function svgTrace(el,pts){
+  const lats=pts.map(p=>p[0]), lons=pts.map(p=>p[1]);
+  const la0=Math.min(...lats), la1=Math.max(...lats), lo0=Math.min(...lons), lo1=Math.max(...lons);
+  const kx=Math.cos((la0+la1)/2*Math.PI/180);
+  const w=(lo1-lo0)*kx||1e-6, h=(la1-la0)||1e-6, S=Math.max(w,h);
+  const px=p=>[ (( (p[1]-lo0)*kx )/S)*84+8, 92-(((p[0]-la0))/S)*84-8+((S-h)/S)*42 ];
+  const d=pts.map(p=>px(p).map(v=>v.toFixed(1)).join(',')).join(' ');
+  el.innerHTML=`<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" style="background:#16181A">
+    <polyline points="${d}" fill="none" stroke="#5FD3C6" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${px(pts[0])[0]}" cy="${px(pts[0])[1]}" r="2" fill="#fff"/>
+    <circle cx="${px(pts[pts.length-1])[0]}" cy="${px(pts[pts.length-1])[1]}" r="2.4" fill="#5FD3C6"/></svg>`;
+}
+function renderRunMap(run){
+  const el=document.getElementById('runmap'); if(!el) return;
+  if(!run.pts||run.pts.length<2){ el.style.display='none'; return; }
+  el.style.display='block';
+  loadLeaflet().then(ok=>{
+    const el2=document.getElementById('runmap'); if(!el2) return;
+    if(ok&&window.L){
+      if(leafMap){ leafMap.remove(); leafMap=null; }
+      el2.innerHTML='';
+      leafMap=L.map(el2,{zoomControl:false,attributionControl:true});
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(leafMap);
+      const line=L.polyline(run.pts,{color:'#0E7C74',weight:4}).addTo(leafMap);
+      leafMap.fitBounds(line.getBounds(),{padding:[18,18]});
+    } else svgTrace(el2, run.pts);
+  });
+}
+
 /* ---------------- RUN ---------------- */
 function renderRun(){
   const w=Math.max(1,weekNum()), rx=runRx(w);
@@ -855,8 +1017,78 @@ function renderRun(){
     {r:'Weeks 9–12',d:'Tuesday builds to 40 min easy. Thursday: 8 × 1 min, or a 20 min tempo effort.',a:w>=9&&w<=12},
     {r:'Month 4+',d:'35–45 min easy Tuesday, quality Thursday, optional easy 30 Saturday. Heat breaks, paces drop. Target a Triangle-area 10K in November.',a:w>=13}
   ];
+  const plan=timerPlan(w);
+  const runs=state.runs||[];
+  let liveHTML='';
+  if(gps.on){
+    liveHTML=`<div class="hero" style="margin-top:6px">
+      <div class="hsub">${gps.paused?'PAUSED':'TRACKING'} — keep the screen on; iPhones stop GPS when it locks</div>
+      <div class="runstats" style="margin-top:12px;color:#fff">
+        <div><div class="v" id="rl-time">${fmtDur(gpsElapsed())}</div><div class="l">Time</div></div>
+        <div><div class="v" id="rl-dist">${(gps.dist/1609.34).toFixed(2)}</div><div class="l">Miles</div></div>
+        <div><div class="v mint" id="rl-pace">—</div><div class="l">Avg pace</div></div>
+      </div>
+      <p class="fine" id="rl-err" style="color:#F0B354;margin:8px 0 0">${gps.err}</p>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" data-gpspause style="background:var(--mint);color:#16181A;flex:1">${gps.paused?'Resume':'Pause'}</button>
+        <button class="btn" data-gpsfinish style="flex:1.5">Finish & save</button>
+        <button class="btn ghost" data-gpsdiscard style="color:#F08A6E;border-color:#F08A6E">Discard</button>
+      </div>
+    </div>`;
+  } else {
+    liveHTML=`<div class="wcard">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn" data-gpsstart>▶ Start GPS run</button>
+        <span class="fine">or log one manually:</span>
+        <input type="number" id="rmi" inputmode="decimal" step="0.1" placeholder="mi" aria-label="miles" style="width:64px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 4px;font:700 13px 'Schibsted Grotesk';text-align:center">
+        <input type="text" id="rdur" inputmode="numeric" placeholder="mm:ss" aria-label="duration" style="width:70px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 4px;font:700 13px 'Schibsted Grotesk';text-align:center">
+        <button class="btn chipbtn" data-runmanual>Save</button>
+      </div>
+    </div>`;
+  }
+  let timerHTML='';
+  if(timer.on){
+    const seg=timer.segs[timer.idx], next=timer.segs[timer.idx+1];
+    timerHTML=`<div class="curcard" style="text-align:center">
+      <div class="timerseg" style="color:${seg.h?'var(--crit)':'var(--teal)'};font-size:13px;letter-spacing:.06em;text-transform:uppercase">${seg.n} · ${timer.idx+1}/${timer.segs.length}</div>
+      <div class="timerbig" id="t-count" style="margin-top:8px">${fmtDur(Math.max(0,(timer.segEnd-Date.now())/1000))}</div>
+      <div class="timernext">${next?'next: '+next.n+' '+fmtDur(next.s):'last one — bring it home'}</div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn chipbtn" data-tpause style="flex:1">${timer.paused?'Resume':'Pause'}</button>
+        <button class="btn ghost" data-tskip style="flex:1">Skip segment</button>
+        <button class="btn ghost" data-tstop style="flex:1">End</button>
+      </div>
+    </div>`;
+  } else {
+    timerHTML=`<div class="wcard" style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div><div style="font-weight:700;font-size:14px">Guided timer</div><div class="fine">${plan.label} — beeps at every switch</div></div>
+      <button class="btn chipbtn" data-tstart style="flex:none">Start</button>
+    </div>`;
+  }
+  const sel=runs[selectedRun];
+  const histHTML = runs.length?`
+    <div class="eyebrow"><span>Run history</span></div>
+    <div class="wcard">
+      ${[...runs].map((r,i)=>({r,i})).reverse().slice(0,10).map(({r,i})=>`<div class="runrow" data-runview="${i}">
+        <div><div style="font-weight:700;font-size:14px">${fmtShort(r.d)}${r.pts?'':' · manual'}</div></div>
+        <div class="num fine">${r.mi.toFixed(2)} mi · ${fmtDur(r.dur)} · ${fmtPace(r.dur/r.mi)}</div>
+      </div>`).join('')}
+    </div>
+    ${sel?`<div class="wcard">
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div style="font-weight:800;font-size:16px">${fmtShort(sel.d)} · ${sel.mi.toFixed(2)} mi</div>
+        <div class="num" style="font-weight:700;color:var(--teal)">${fmtDur(sel.dur)} · ${fmtPace(sel.dur/sel.mi)}</div>
+      </div>
+      ${sel.splits&&sel.splits.length?`<div class="fine num" style="margin-top:6px">Splits: ${sel.splits.map((s,i)=>'mi '+(i+1)+' — '+fmtDur(s)).join(' · ')}</div>`:''}
+      <div id="runmap"></div>
+      <button class="btn ghost" data-rundel="${selectedRun}" style="margin-top:10px;font-size:11.5px">delete this run</button>
+    </div>`:''}`:'';
   document.getElementById('tab-run').innerHTML=`
     <button class="back" data-go="today">‹ Today</button>
+    <div class="eyebrow"><span>Log a run</span></div>
+    ${liveHTML}
+    ${timerHTML}
+    ${histHTML}
     <div class="eyebrow"><span>This week · ${rx.phase}</span></div>
     <div class="hero">
       <div style="display:flex;flex-direction:column;gap:12px">
@@ -884,6 +1116,8 @@ function renderRun(){
     </div>
     <div class="callout crit">Recovery guardrail: resting heart rate trending up, sleep degrading, or lifts going backward two sessions in a row → drop the PM sessions for 3–4 days. At this deficit you have less margin than usual.</div>
     <div class="callout">The two rules that matter most: the scheduled workout you do beats the perfect workout you skip — and do not run hard and lift hard in month one. Easy runs stay easy.</div>`;
+  const selR=(state.runs||[])[selectedRun];
+  if(selR) renderRunMap(selR);
 }
 
 /* ---------------- EAT (quick add, scanner/importer, shop folded in) ---------------- */
@@ -1151,6 +1385,12 @@ function renderTrend(){
       </table>
     </div>
     <div class="callout crit"><b>Deficit warning signs</b> — any two at once means take the diet break early: lifts regressing a week straight · waking at 3 AM · irritability someone else comments on · constant cold hands · every run feeling like mile 20.</div>
+    <div class="eyebrow"><span>Your data</span></div>
+    <div class="wcard" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <button class="btn chipbtn" data-export>Export backup</button>
+      <label class="btn ghost" style="cursor:pointer">Import backup<input type="file" id="importfile" accept=".json,application/json" style="display:none"></label>
+      <span class="fine" style="flex:1;min-width:160px">Everything lives in this browser — export before switching phones, import to restore.</span>
+    </div>
     ${ws.length?`<div class="eyebrow"><span>Entries</span></div><div class="wcard scrollx"><table class="plain">
       ${[...ws].reverse().slice(0,14).map(p=>`<tr><td class="num">${fmtShort(p.d)}</td><td class="num">${p.w.toFixed(1)}</td>
       <td style="text-align:right"><button class="btn ghost" style="padding:3px 9px;font-size:11px" data-del="${p.d}">delete</button></td></tr>`).join('')}
@@ -1273,6 +1513,36 @@ document.addEventListener('click',e=>{
   if(xp){ const id=xp.dataset.expand; expanded.has(id)?expanded.delete(id):expanded.add(id); renderTrain(); return; }
   const er=T.closest('[data-exrow]');
   if(er){ const id=er.dataset.exrow; expanded.has(id)?expanded.delete(id):expanded.add(id); renderTrain(); return; }
+  if(T.closest('[data-gpsstart]')){ gpsStart(); return; }
+  if(T.closest('[data-gpspause]')){ gpsPause(); return; }
+  if(T.closest('[data-gpsfinish]')){ gpsStop(false); return; }
+  if(T.closest('[data-gpsdiscard]')){ if(confirm('Discard this run?')) gpsStop(true); return; }
+  if(T.closest('[data-runmanual]')){
+    const mi=+document.getElementById('rmi').value;
+    const parts=(document.getElementById('rdur').value||'').split(':').map(Number);
+    const dur=parts.length===2?parts[0]*60+parts[1]:(parts[0]||0)*60;
+    if(mi>0&&dur>0){
+      if(!state.runs) state.runs=[];
+      state.runs.push({d:todayISO(), dur, mi:+mi.toFixed(2), splits:[], pts:null});
+      const iso=todayISO(); const dn=state.done[iso]||(state.done[iso]={}); if(TEMPLATE[DOW].am.kind==='run') dn.am=true;
+      save(); selectedRun=state.runs.length-1; showToast('Run logged'); renderRun(); renderToday(); renderHeader();
+    } else showToast('Need miles and mm:ss');
+    return;
+  }
+  const rv=T.closest('[data-runview]');
+  if(rv){ selectedRun=+rv.dataset.runview; renderRun(); return; }
+  const rd=T.closest('[data-rundel]');
+  if(rd){ if(confirm('Delete this run?')){ state.runs.splice(+rd.dataset.rundel,1); selectedRun=-1; save(); renderRun(); } return; }
+  if(T.closest('[data-tstart]')){ timerStart(); return; }
+  if(T.closest('[data-tpause]')){ timerPause(); return; }
+  if(T.closest('[data-tskip]')){ timerSkip(); return; }
+  if(T.closest('[data-tstop]')){ timerStop(); return; }
+  if(T.closest('[data-export]')){
+    const blob=new Blob([JSON.stringify(state,null,1)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='cadence-backup-'+todayISO()+'.json'; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),5000); showToast('Backup downloaded'); return;
+  }
   const go=T.closest('[data-go]');
   if(go){ if(go.dataset.day){ currentDay=go.dataset.day; renderTrain(); } showTab(go.dataset.go); return; }
   const dk=T.closest('[data-dayk]');
@@ -1281,6 +1551,17 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.gro){ state.grocery.checked[t.dataset.gro]=t.checked; save(); renderShop(); renderEat(); }
+  if(t.id==='importfile'&&t.files[0]){
+    t.files[0].text().then(txt=>{
+      try{
+        const j=JSON.parse(txt);
+        if(!j||!j.start) throw 0;
+        if(confirm('Replace everything in this browser with the backup? Current data is overwritten.')){
+          localStorage.setItem(KEY, JSON.stringify(j)); location.reload();
+        }
+      }catch(e){ showToast('That file isn’t a Cadence backup'); }
+    });
+  }
 });
 document.addEventListener('input',e=>{
   if(e.target.id==='cw'){
@@ -1297,6 +1578,16 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------------- boot ---------------- */
+/* Apple Watch bridge: a Shortcut can open ?burn=<active kcal> and it lands here */
+(function(){
+  const q=new URLSearchParams(location.search);
+  const b=Math.round(+q.get('burn'));
+  if(b>0){ if(!state.burn) state.burn={}; state.burn[todayISO()]=b; save();
+    history.replaceState(null,'',location.pathname); setTimeout(()=>showToast('Watch burn synced: '+b+' cal'),400); }
+})();
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='127.0.0.1')){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
 function renderAll(){ renderHeader(); renderToday(); renderTrain(); renderRun(); renderEat(); renderShop(); renderTrend(); }
 renderAll();
 </script>
