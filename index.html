@@ -1027,6 +1027,79 @@ function timerPause(){ if(timer.paused){ timer.segEnd+=Date.now()-timer.pauseAt;
 function timerSkip(){ timer.segEnd=Date.now(); }
 function timerStop(){ timer.on=false; clearInterval(timer.int); renderRun(); }
 
+/* ---------------- route planner (OSM foot routing, keyless) ---------------- */
+let rp={start:null,wps:[],line:null,steps:[],mi:0,map:null,lineLayer:null,marks:[]};
+function setRpInfo(h){ const el=document.getElementById('rpinfo'); if(el) el.innerHTML=h; }
+async function osrmFoot(coords){ // [[lat,lng],...] -> {dist, line, steps}
+  const str=coords.map(c=>c[1].toFixed(6)+','+c[0].toFixed(6)).join(';');
+  const r=await fetch('https://routing.openstreetmap.de/routed-foot/route/v1/foot/'+str+'?overview=full&geometries=geojson&steps=true&continue_straight=true');
+  const j=await r.json(); const rt=j.routes&&j.routes[0]; if(!rt) throw new Error('no route');
+  const steps=[];
+  rt.legs.forEach(leg=>leg.steps.forEach(st=>{
+    const m=st.maneuver;
+    if(m.type==='new name'||((m.modifier||'')==='straight'&&m.type!=='depart'&&m.type!=='arrive')) return;
+    const txt=m.type==='depart'?'Head out':m.type==='arrive'?'Back to start':
+      ((m.modifier||'continue').replace(/^./,c=>c.toUpperCase())+(st.name?' onto '+st.name:''));
+    steps.push({t:txt});
+  }));
+  const arr=steps.map((s,i)=>s.t==='Back to start'?i:-1).filter(i=>i>=0);
+  arr.slice(0,-1).reverse().forEach(i=>steps.splice(i,1));
+  return {dist:rt.distance, line:rt.geometry.coordinates.map(c=>[c[1],c[0]]), steps};
+}
+function rpOffset(c,m,brg){
+  const r=brg*Math.PI/180;
+  return [c[0]+m*Math.cos(r)/111320, c[1]+m*Math.sin(r)/(111320*Math.cos(c[0]*Math.PI/180))];
+}
+function applyRoute(res){
+  rp.line=res.line; rp.steps=res.steps; rp.mi=+(res.dist/1609.34).toFixed(2);
+  state.route={mi:rp.mi, cues:res.steps.length, when:todayISO()}; save();
+  drawRp();
+  setRpInfo('<b class="num">'+rp.mi+' mi</b> · '+rp.steps.length+' cues'
+    +'<details style="margin-top:6px"><summary class="fine" style="cursor:pointer">turn list</summary>'
+    +rp.steps.map(s=>'<div class="fine">• '+s.t+'</div>').join('')+'</details>');
+}
+async function rpAutoLoop(){
+  if(!rp.start) return;
+  const target=(+document.getElementById('rpmi').value||2)*1609.34;
+  let arm=target/5.2, seed=Math.random()*360, best=null;
+  setRpInfo('Planning a loop…');
+  for(let i=0;i<2;i++){
+    const pts=[rp.start, rpOffset(rp.start,arm,seed), rpOffset(rp.start,arm*1.4,seed+90), rpOffset(rp.start,arm,seed+180), rp.start];
+    try{ best=await osrmFoot(pts); }catch(e){ setRpInfo('Routing server unreachable from here — it works on the installed app / github.io version.'); return; }
+    const ratio=target/Math.max(1,best.dist);
+    if(Math.abs(1-ratio)<0.10) break;
+    arm=Math.min(Math.max(arm*ratio,120),6000);
+  }
+  rp.wps=[]; applyRoute(best);
+}
+async function rpRouteWps(){
+  try{ applyRoute(await osrmFoot([rp.start,...rp.wps,rp.start])); }
+  catch(e){ setRpInfo('Couldn’t route through those points — try closer to a street.'); }
+}
+function drawRp(){
+  if(!rp.map||!window.L) return;
+  if(rp.lineLayer){ rp.map.removeLayer(rp.lineLayer); rp.lineLayer=null; }
+  rp.marks.forEach(m=>rp.map.removeLayer(m)); rp.marks=[];
+  rp.marks.push(L.circleMarker(rp.start,{radius:6,color:'#0E7C74',fillColor:'#0E7C74',fillOpacity:1}).addTo(rp.map));
+  rp.wps.forEach(w=>rp.marks.push(L.circleMarker(w,{radius:5,color:'#5FD3C6',fillColor:'#5FD3C6',fillOpacity:1}).addTo(rp.map)));
+  if(rp.line){
+    rp.lineLayer=L.polyline(rp.line,{color:'#0E7C74',weight:4}).addTo(rp.map);
+    rp.map.fitBounds(rp.lineLayer.getBounds(),{padding:[16,16]});
+  }
+}
+async function rpInitMap(){
+  const el=document.getElementById('rpmap'); if(!el||!rp.start) return;
+  el.style.display='block';
+  const ok=await loadLeaflet();
+  const el2=document.getElementById('rpmap'); if(!el2) return;
+  if(!ok||!window.L){ setRpInfo('The map needs the installed app / github.io version.'); return; }
+  if(rp.map){ rp.map.remove(); rp.map=null; }
+  rp.map=L.map(el2,{zoomControl:false}).setView(rp.start,15);
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(rp.map);
+  rp.map.on('click',e=>{ rp.wps.push([e.latlng.lat,e.latlng.lng]); rpRouteWps(); });
+  drawRp();
+}
+
 /* route map: Leaflet + OSM where the network allows, SVG trace otherwise */
 let leafMap=null;
 function loadLeaflet(){
@@ -1126,6 +1199,19 @@ function renderRun(){
       <button class="btn chipbtn" data-tstart style="flex:none">Start</button>
     </div>`;
   }
+  const plannerHTML=`
+    <div class="eyebrow"><span>Plan a route</span>${state.route?`<span class="note">last: ${state.route.mi} mi · ${state.route.cues} cues</span>`:''}</div>
+    <div class="wcard">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn chipbtn" data-rploc>${rp.start?'Restart at my location':'Start at my location'}</button>
+        <input type="number" id="rpmi" inputmode="decimal" step="0.5" value="${rp.miTarget||2}" aria-label="target miles" style="width:60px;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 4px;font:700 13px 'Schibsted Grotesk';text-align:center">
+        <span class="fine">mi</span>
+        <button class="btn" data-rpauto ${rp.start?'':'disabled style="opacity:.5"'}>Auto loop</button>
+      </div>
+      <div id="rpmap" style="height:240px;border-radius:12px;overflow:hidden;margin-top:10px;background:var(--track);display:${rp.start?'block':'none'}"></div>
+      <div id="rpinfo" style="margin-top:8px"></div>
+      <p class="fine" style="margin-bottom:0">Tap the map to add waypoints — routes always loop back to the start. Your watch plans its own loop: set the same distance there and it navigates turn-by-turn from wherever you're standing.</p>
+    </div>`;
   const sel=runs[selectedRun];
   const histHTML = runs.length?`
     <div class="eyebrow"><span>Run history</span></div>
@@ -1149,6 +1235,7 @@ function renderRun(){
     <div class="eyebrow"><span>Log a run</span></div>
     ${liveHTML}
     ${timerHTML}
+    ${plannerHTML}
     ${histHTML}
     <div class="eyebrow"><span>This week · ${rx.phase}</span></div>
     <div class="hero">
@@ -1179,6 +1266,7 @@ function renderRun(){
     <div class="callout">The two rules that matter most: the scheduled workout you do beats the perfect workout you skip — and do not run hard and lift hard in month one. Easy runs stay easy.</div>`;
   const selR=(state.runs||[])[selectedRun];
   if(selR) renderRunMap(selR);
+  if(rp.start) rpInitMap();
 }
 
 /* ---------------- EAT (quick add, scanner/importer, shop folded in) ---------------- */
@@ -1632,6 +1720,17 @@ document.addEventListener('click',e=>{
   if(rv){ selectedRun=+rv.dataset.runview; renderRun(); return; }
   const rd=T.closest('[data-rundel]');
   if(rd){ if(confirm('Delete this run?')){ state.runs.splice(+rd.dataset.rundel,1); selectedRun=-1; save(); renderRun(); } return; }
+  if(T.closest('[data-rploc]')){
+    if(!navigator.geolocation){ setRpInfo('No location available here.'); return; }
+    setRpInfo('Getting your location…');
+    navigator.geolocation.getCurrentPosition(p=>{
+      rp.start=[p.coords.latitude,p.coords.longitude]; rp.wps=[]; rp.line=null;
+      rp.miTarget=+document.getElementById('rpmi').value||2;
+      renderRun();
+    },()=>setRpInfo('Location permission denied — allow it in Settings.'),{enableHighAccuracy:true,timeout:15000});
+    return;
+  }
+  if(T.closest('[data-rpauto]')){ rp.miTarget=+document.getElementById('rpmi').value||2; rpAutoLoop(); return; }
   if(T.closest('[data-tstart]')){ timerStart(); return; }
   if(T.closest('[data-tpause]')){ timerPause(); return; }
   if(T.closest('[data-tskip]')){ timerSkip(); return; }
