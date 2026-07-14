@@ -206,6 +206,16 @@
   .timernext{text-align:center;font-size:12px;color:var(--sub);margin-top:4px}
   .runrow{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}
   .runrow:last-child{border-bottom:none}
+  .heatwrap{overflow-x:auto;padding-bottom:4px}
+  .heat{display:flex;gap:3px}
+  .heat .col{display:flex;flex-direction:column;gap:3px}
+  .heat i{width:12px;height:12px;border-radius:3px;display:block;background:var(--track)}
+  .sparkrow{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+  .sparkrow:last-child{border-bottom:none}
+  .photogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .photogrid .ph{position:relative;cursor:pointer}
+  .photogrid img{width:100%;aspect-ratio:3/4;object-fit:cover;border-radius:10px;display:block;background:var(--track)}
+  .photogrid .pd{position:absolute;bottom:6px;left:6px;background:rgba(22,24,26,.75);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
   .searchrow{display:flex;gap:8px;margin-top:10px}
   .searchrow input{flex:1;min-width:0;border:1px solid var(--line2);background:var(--card);color:var(--ink);border-radius:10px;
     padding:10px 12px;font:600 14px 'Schibsted Grotesk',system-ui}
@@ -237,6 +247,15 @@
 </div>
 
 <div class="toast" id="toast" role="status"></div>
+
+<div id="photoview" style="display:none;position:fixed;inset:0;background:rgba(10,11,11,.88);z-index:60;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px">
+  <img id="pvimg" alt="progress photo" style="max-width:92vw;max-height:72vh;border-radius:14px">
+  <div style="display:flex;gap:10px;align-items:center">
+    <span id="pvdate" style="color:#fff;font-weight:700"></span>
+    <button class="btn ghost" id="pvdel" style="color:#F08A6E;border-color:#F08A6E">Delete</button>
+    <button class="btn" id="pvclose" style="background:var(--mint);color:#16181A">Close</button>
+  </div>
+</div>
 
 <nav class="tabs" id="tabs" aria-label="Sections">
   <button data-tab="today" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 12 2-6h6"/></svg>Today</button>
@@ -712,6 +731,21 @@ function todayLog(exId){
   return (state.logs[exId]||[]).find(e=>e.d===todayISO())||null;
 }
 function loggedSets(ex){ const e=todayLog(ex.id); return e?e.s.filter(s=>s.w!==''||s.r!=='').length:0; }
+function e1rm(w,r){ w=+w; r=+r; if(!(w>0&&r>0)) return 0; return w*(1+Math.min(r,20)/30); } // Epley, capped
+function exSeries(exId){
+  return (state.logs[exId]||[])
+    .map(e=>({d:e.d, v:Math.max(0,...e.s.map(s=>e1rm(s.w,s.r)))}))
+    .filter(p=>p.v>0).sort((a,b)=>a.d<b.d?-1:1);
+}
+function spark(series){
+  if(series.length<2) return '';
+  const W=110,H=30,vals=series.map(p=>p.v);
+  const lo=Math.min(...vals), hi=Math.max(...vals), sp=hi-lo||1;
+  const pts=series.map((p,i)=>[(i/(series.length-1))*(W-8)+4, H-4-((p.v-lo)/sp)*(H-8)]);
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+    <polyline points="${pts.map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${pts[pts.length-1][0]}" cy="${pts[pts.length-1][1]}" r="2.6" fill="var(--teal)"/></svg>`;
+}
 function exDone(ex){ return loggedSets(ex)>=ex.sets; }
 function sessInfo(){
   if(state.sess && state.sess.d===todayISO()) return state.sess;
@@ -805,6 +839,29 @@ function renderTrain(){
       </div>`;
     }).join('')}
     </div>
+    ${(()=>{ // strength progress: est. 1RM per lift, all logged data
+      const prog=[];
+      ['A','B','C'].forEach(k=>WORKOUTS[k].ex.forEach(ex=>{
+        if(ex.unit==='s'||ex.top===0) return;
+        const s=exSeries(ex.id);
+        if(s.length) prog.push({ex,s});
+      }));
+      if(!prog.length) return '';
+      return `<div class="eyebrow"><span>Strength progress · est. 1RM</span></div>
+      <div class="wcard">
+        ${prog.map(({ex,s})=>{
+          const last=s[s.length-1].v, best=Math.max(...s.map(p=>p.v));
+          const isPR=s.length>1&&last>=best;
+          return `<div class="sparkrow">
+            <div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ex.n}</div>
+              <div class="fine num">${s.length} session${s.length>1?'s':''} · best ~${Math.round(best)} lb</div></div>
+            ${spark(s)}
+            <div class="num" style="font-weight:800;font-size:15px;flex:none;text-align:right;min-width:56px">${Math.round(last)}${isPR?' <span class="pill hint">PR</span>':''}</div>
+          </div>`;
+        }).join('')}
+        <p class="fine" style="margin-bottom:0">Estimated one-rep max (weight × reps, Epley). It should crawl up even while the scale crawls down — that’s the deficit done right.</p>
+      </div>`;
+    })()}
     <div class="wcard">
       <h3>Waist rules, always</h3>
       <ul class="tight">
@@ -822,14 +879,17 @@ function commitSet(exId){
   const w=document.getElementById('cw')?document.getElementById('cw').value.trim():'';
   if(r===''&&w===''){ showToast('Enter the set first'); return; }
   let arr=state.logs[exId]||(state.logs[exId]=[]);
+  const prevBest=Math.max(0,...arr.flatMap(e=>e.s).map(s=>e1rm(s.w,s.r)));
   let entry=arr.find(e=>e.d===todayISO());
   if(!entry){ entry={d:todayISO(),s:[]}; arr.push(entry); }
   entry.s.push({w,r});
   if(!state.sess||state.sess.d!==todayISO()) state.sess={d:todayISO(),t0:Date.now()};
   save();
+  const v=e1rm(w,r);
   if(loggedSets(ex)>=ex.sets){ overrideEx=null; showToast(ex.n+' done'); }
   else { restEnd=Date.now()+90*1000; }
   renderTrain(); renderHeader();
+  if(prevBest>0&&v>prevBest) showToast('New PR — '+ex.n+': ~'+Math.round(v)+' lb 1RM');
 }
 function tickRest(){
   clearInterval(restTimer);
@@ -1385,6 +1445,43 @@ function renderTrend(){
       </table>
     </div>
     <div class="callout crit"><b>Deficit warning signs</b> — any two at once means take the diet break early: lifts regressing a week straight · waking at 3 AM · irritability someone else comments on · constant cold hands · every run feeling like mile 20.</div>
+    <div class="eyebrow"><span>Consistency</span><span class="note">primer + sessions, per day</span></div>
+    <div class="wcard">
+      <div class="heatwrap"><div class="heat">${(()=>{
+        const start=parseISO(state.start), today=parseISO(todayISO());
+        const totalWk=Math.max(1,Math.floor((today-start)/(7*864e5))+1);
+        const firstWk=Math.max(0,totalWk-18);
+        const cols=[]; const shades=['var(--track)','#BFE3DC','#5FB3A8','#0E7C74'];
+        const words=['nothing','showed up','solid day','ran the table'];
+        for(let wk=firstWk;wk<totalWk;wk++){
+          let col='';
+          for(let d=0;d<7;d++){
+            const dt=new Date(start); dt.setDate(dt.getDate()+wk*7+d);
+            if(dt>today){ col+='<i style="visibility:hidden"></i>'; continue; }
+            const iso=isoOf(dt);
+            const pr=(state.primer[iso]||[]).filter(Boolean).length===4?1:0;
+            const dn=state.done[iso]||{};
+            const lv=Math.min(3,pr+(dn.am?1:0)+(dn.pm?1:0));
+            const isToday=iso===todayISO();
+            col+='<i title="'+fmtShort(iso)+' — '+words[lv]+'" style="background:'+shades[lv]+(isToday?';outline:2px solid var(--teal);outline-offset:1px':'')+'"></i>';
+          }
+          cols.push('<div class="col">'+col+'</div>');
+        }
+        return cols.join('');
+      })()}</div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:9px">
+        <span class="fine">Mon → Sun, one column per program week</span>
+        <span style="display:flex;gap:3px;align-items:center" class="fine">less <i style="width:10px;height:10px;border-radius:3px;background:var(--track);display:inline-block"></i><i style="width:10px;height:10px;border-radius:3px;background:#BFE3DC;display:inline-block"></i><i style="width:10px;height:10px;border-radius:3px;background:#5FB3A8;display:inline-block"></i><i style="width:10px;height:10px;border-radius:3px;background:#0E7C74;display:inline-block"></i> more</span>
+      </div>
+    </div>
+    <div class="eyebrow"><span>Progress photos</span></div>
+    <div class="wcard">
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <label class="btn chipbtn" style="cursor:pointer">+ Add photo<input type="file" id="photofile" accept="image/*" capture="environment" style="display:none"></label>
+        <span class="fine" style="flex:1;min-width:150px">Same spot, same light, once a week. Stored only on this device — not in JSON backups.</span>
+      </div>
+      <div class="photogrid" id="photogrid"></div>
+    </div>
     <div class="eyebrow"><span>Your data</span></div>
     <div class="wcard" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn chipbtn" data-export>Export backup</button>
@@ -1405,6 +1502,7 @@ function renderTrend(){
     state.weights=state.weights.filter(p=>p.d!==b.dataset.del); save(); renderTrend(); renderToday();
   });
   drawChart();
+  renderPhotos();
 }
 
 /* chart inside the dark hero — mint series, goal band, animated draw, hover crosshair */
@@ -1543,6 +1641,8 @@ document.addEventListener('click',e=>{
     a.download='cadence-backup-'+todayISO()+'.json'; a.click();
     setTimeout(()=>URL.revokeObjectURL(a.href),5000); showToast('Backup downloaded'); return;
   }
+  const pv=T.closest('[data-pv]');
+  if(pv){ openPhoto(pv.dataset.pv); return; }
   const go=T.closest('[data-go]');
   if(go){ if(go.dataset.day){ currentDay=go.dataset.day; renderTrain(); } showTab(go.dataset.go); return; }
   const dk=T.closest('[data-dayk]');
@@ -1551,6 +1651,7 @@ document.addEventListener('click',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.dataset.gro){ state.grocery.checked[t.dataset.gro]=t.checked; save(); renderShop(); renderEat(); }
+  if(t.id==='photofile'&&t.files[0]){ photoAdd(t.files[0]); t.value=''; }
   if(t.id==='importfile'&&t.files[0]){
     t.files[0].text().then(txt=>{
       try{
@@ -1576,6 +1677,76 @@ document.addEventListener('input',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Enter'&&e.target.id==='offq'){ const q=e.target.value.trim(); if(q) offSearch(q); }
 });
+
+/* ---------------- progress photos (IndexedDB — too big for localStorage) ---------------- */
+let photoURLs=[], pvOpenId=null;
+function idb(){
+  return new Promise((res,rej)=>{
+    const r=indexedDB.open('cadence-photos',1);
+    r.onupgradeneeded=()=>r.result.createObjectStore('p',{keyPath:'id'});
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+  });
+}
+async function photoAll(){
+  const db=await idb();
+  return new Promise((res,rej)=>{
+    const q=db.transaction('p').objectStore('p').getAll();
+    q.onsuccess=()=>res(q.result||[]); q.onerror=()=>rej(q.error);
+  });
+}
+async function photoAdd(file){
+  const img=new Image(); img.src=URL.createObjectURL(file);
+  try{ await img.decode(); }catch(e){ showToast('Couldn’t read that image'); return; }
+  const s=Math.min(1,1000/Math.max(img.naturalWidth,img.naturalHeight));
+  const c=document.createElement('canvas');
+  c.width=Math.round(img.naturalWidth*s); c.height=Math.round(img.naturalHeight*s);
+  c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  URL.revokeObjectURL(img.src);
+  const blob=await new Promise(r=>c.toBlob(r,'image/jpeg',.82));
+  const db=await idb();
+  await new Promise((res,rej)=>{
+    const tx=db.transaction('p','readwrite');
+    tx.objectStore('p').put({id:Date.now(), d:todayISO(), b:blob});
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+  });
+  showToast('Photo saved'); renderPhotos();
+}
+async function photoDel(id){
+  const db=await idb();
+  await new Promise((res,rej)=>{
+    const tx=db.transaction('p','readwrite');
+    tx.objectStore('p').delete(id);
+    tx.oncomplete=res; tx.onerror=()=>rej(tx.error);
+  });
+  renderPhotos();
+}
+async function renderPhotos(){
+  const grid=document.getElementById('photogrid'); if(!grid) return;
+  photoURLs.forEach(u=>URL.revokeObjectURL(u)); photoURLs=[];
+  let all=[];
+  try{ all=await photoAll(); }catch(e){ grid.innerHTML='<p class="fine">Photos aren’t available in this browser.</p>'; return; }
+  all.sort((a,b)=>b.id-a.id);
+  grid.innerHTML=all.map(p=>{
+    const u=URL.createObjectURL(p.b); photoURLs.push(u);
+    return `<div class="ph" data-pv="${p.id}"><img src="${u}" alt="progress photo ${fmtShort(p.d)}"><div class="pd">${fmtShort(p.d)}</div></div>`;
+  }).join('')||'<p class="fine" style="grid-column:1/-1;margin:4px 0 0">No photos yet. The scale lies week to week — photos don’t.</p>';
+  grid._items=all;
+}
+async function openPhoto(id){
+  const all=(document.getElementById('photogrid')||{})._items||await photoAll();
+  const p=all.find(x=>x.id===+id); if(!p) return;
+  pvOpenId=p.id;
+  const v=document.getElementById('photoview');
+  document.getElementById('pvimg').src=URL.createObjectURL(p.b);
+  document.getElementById('pvdate').textContent=fmtShort(p.d);
+  v.style.display='flex';
+}
+function closePhoto(){
+  const v=document.getElementById('photoview');
+  const img=document.getElementById('pvimg');
+  if(img.src) URL.revokeObjectURL(img.src);
+  img.src=''; v.style.display='none'; pvOpenId=null;
+}
 
 /* ---------------- Apple Health sync (native shell only — no-op on the web) ---------------- */
 function HK(){
@@ -1645,7 +1816,10 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden) healthSy
 if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='127.0.0.1')){
   navigator.serviceWorker.register('sw.js').catch(()=>{});
 }
-function renderAll(){ renderHeader(); renderToday(); renderTrain(); renderRun(); renderEat(); renderShop(); renderTrend(); }
+document.getElementById('pvclose').onclick=closePhoto;
+document.getElementById('photoview').addEventListener('click',e=>{ if(e.target.id==='photoview') closePhoto(); });
+document.getElementById('pvdel').onclick=()=>{ if(pvOpenId!=null&&confirm('Delete this photo?')){ const id=pvOpenId; closePhoto(); photoDel(id); } };
+function renderAll(){ renderHeader(); renderToday(); renderTrain(); renderRun(); renderEat(); renderShop(); renderTrend(); renderPhotos(); }
 renderAll();
 healthSync();
 </script>
