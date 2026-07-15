@@ -1829,7 +1829,12 @@ document.addEventListener('keydown',e=>{
 });
 
 /* ---------------- Spotify: playlist deep-links + PKCE connect (now playing, controls) ---------------- */
-function spCfg(){ if(!state.spotify) state.spotify={cid:'',pl:{run:'',lift:''},tok:null}; return state.spotify; }
+const SP_DEFAULT_CID='378332274e5641d8af7bce5516f3d0da'; // same Spotify app as daymark (public PKCE client id)
+function spCfg(){
+  if(!state.spotify) state.spotify={cid:SP_DEFAULT_CID,pl:{run:'',lift:''},tok:null};
+  if(!state.spotify.cid) state.spotify.cid=SP_DEFAULT_CID;
+  return state.spotify;
+}
 const SP_SCOPES='user-read-playback-state user-modify-playback-state user-read-currently-playing';
 const SP_HTTP=location.protocol==='https:'||location.protocol==='http:';
 function spRedirect(){ return location.origin+location.pathname; }
@@ -1909,7 +1914,7 @@ function musicCard(context){
         <input id="splift" placeholder="Lift playlist link" value="${sp.pl.lift||''}" style="${inputStyle}">
         <input id="spcid" placeholder="Spotify client ID (only needed for Connect)" value="${sp.cid||''}" style="${inputStyle}">
         <button class="btn chipbtn" data-spsave style="align-self:flex-start">Save</button>
-        <p class="fine" style="margin:0">Playlist buttons just open the Spotify app — paste any playlist or album link. For now-playing + controls: create a free app at developer.spotify.com/dashboard, add <b>${spRedirect()}</b> as a Redirect URI, paste its client ID here, Save, then Connect. Controls need Spotify Premium. Connect works on the github.io / web version${SP_HTTP?'':' — not inside this installed app (playlist buttons still work here)'}.</p>
+        <p class="fine" style="margin:0">Playlist buttons just open the Spotify app — paste any playlist or album link. Now-playing + controls use the same Spotify app as daymark (client ID prefilled): one-time step, add <b>${spRedirect()}</b> as a Redirect URI in its settings at developer.spotify.com/dashboard, then hit Connect. Controls need Spotify Premium. Connect works on the github.io / web version${SP_HTTP?'':' — not inside this installed app (playlist buttons still work here)'}.</p>
       </div></details>
   </div>`;
 }
