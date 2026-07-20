@@ -267,10 +267,23 @@
 </nav>
 
 <dialog id="startdlg">
-  <h3 style="margin:0 0 8px;font-size:16px">Program start date</h3>
-  <p class="sub">Week 1 begins on this Monday. It drives the run progression, rep targets and checkpoints.</p>
+  <h3 style="margin:0 0 8px;font-size:16px">Program</h3>
+  <p class="sub" style="margin-top:0">Everything recalibrates from these — the week counter, run progression, rings, chart, milestones and goal date.</p>
+  <label class="fine" style="display:block;margin:10px 0 4px;font-weight:700">Day 1</label>
   <input type="date" id="startinput" style="width:100%;padding:10px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);font-size:14px;font-family:inherit">
-  <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+  <label class="fine" style="display:block;margin:10px 0 4px;font-weight:700">Length</label>
+  <div style="display:flex;align-items:center;gap:8px">
+    <input type="number" id="proglen" min="4" max="30" inputmode="numeric" style="width:80px;padding:10px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);font:700 15px 'Schibsted Grotesk';text-align:center">
+    <span class="fine">weeks · lands <b id="proglands"></b></span>
+  </div>
+  <label class="fine" style="display:block;margin:10px 0 4px;font-weight:700">The arc</label>
+  <div style="display:flex;align-items:center;gap:8px">
+    <input type="number" id="progw0" step="0.5" inputmode="decimal" style="width:84px;padding:10px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);font:700 15px 'Schibsted Grotesk';text-align:center">
+    <span class="fine">→</span>
+    <input type="number" id="proggoal" step="0.5" inputmode="decimal" style="width:84px;padding:10px;border:1px solid var(--line2);border-radius:10px;background:var(--card);color:var(--ink);font:700 15px 'Schibsted Grotesk';text-align:center">
+    <span class="fine">lb</span>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
     <button class="btn ghost" id="startcancel">Cancel</button>
     <button class="btn" id="startsave">Save</button>
   </div>
@@ -282,8 +295,16 @@
 const KEY='durham-coach-v1';
 const state = load();
 function load(){
-  try{ const s=JSON.parse(localStorage.getItem(KEY)); if(s&&s.start) return s; }catch(e){}
-  return { start:'2026-07-13', primer:{}, done:{}, logs:{}, weights:[], grocery:{week:null,checked:{}} };
+  let s=null;
+  try{ s=JSON.parse(localStorage.getItem(KEY)); }catch(e){}
+  if(!s||!s.start) s={ start:'2026-07-20', primer:{}, done:{}, logs:{}, weights:[], grocery:{week:null,checked:{}} };
+  // one-time shift: day 1 moved to Monday Jul 20 2026
+  if((s.start==='2026-07-13'||s.start==='2026-07-15')&&s.startAdj!==2){
+    s.start='2026-07-20'; s.startAdj=2;
+    try{ localStorage.setItem(KEY, JSON.stringify(s)); }catch(e){}
+  }
+  if(!s.prog) s.prog={weeks:16, w0:180, goal:160};
+  return s;
 }
 function save(){ localStorage.setItem(KEY, JSON.stringify(state)); if(typeof scheduleWidgetPush==='function') scheduleWidgetPush(); }
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -293,8 +314,14 @@ function isoOf(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,
 function todayISO(){ return isoOf(new Date()); }
 function parseISO(s){ const p=s.split('-'); return new Date(+p[0],+p[1]-1,+p[2]); }
 function fmtShort(s){ return parseISO(s).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
-function weekNum(){ const diff=parseISO(todayISO())-parseISO(state.start); return Math.max(0, Math.floor(diff/(7*864e5))+1); }
+function mondayOfStart(){ const d=parseISO(state.start); const m=new Date(d); m.setDate(d.getDate()-((d.getDay()+6)%7)); return m; }
+function weekNum(){ // program weeks are Monday-aligned even when day 1 lands midweek
+  const t=parseISO(todayISO());
+  if(t<parseISO(state.start)) return 0;
+  return Math.floor((t-mondayOfStart())/(7*864e5))+1;
+}
 function daysUntilStart(){ return Math.round((parseISO(state.start)-parseISO(todayISO()))/864e5); }
+function progEndISO(){ const s=parseISO(state.start); const e=new Date(mondayOfStart()); e.setDate(e.getDate()+state.prog.weeks*7-1); return isoOf(e<s?s:e); }
 const DOW = new Date().getDay();
 
 /* ---------------- program data ---------------- */
@@ -541,8 +568,8 @@ function currentWeight(){
 }
 function estGoalDate(){
   const r=weeklyRate(), a=avgWindow(7,0);
-  if(r==null||a==null||r<0.3||a<=160) return null;
-  const days=(a-160)/r*7;
+  if(r==null||a==null||r<0.3||a<=state.prog.goal) return null;
+  const days=(a-state.prog.goal)/r*7;
   if(days>420) return null;
   const d=new Date(); d.setDate(d.getDate()+Math.round(days));
   return d.toLocaleDateString(undefined,{month:'short',day:'numeric'});
@@ -583,10 +610,25 @@ function renderHeader(){
     `<span class="dot"></span>${s>0?s+'-day streak':'day one'}`;
 }
 document.getElementById('startcancel').onclick=()=>document.getElementById('startdlg').close();
+function progLandsPreview(){
+  const v=document.getElementById('startinput').value, wk=+document.getElementById('proglen').value||16;
+  const el=document.getElementById('proglands'); if(!el||!v) return;
+  const d=parseISO(v); const m=new Date(d); m.setDate(d.getDate()-((d.getDay()+6)%7)+wk*7-1);
+  el.textContent=m.toLocaleDateString(undefined,{month:'short',day:'numeric'});
+}
+document.getElementById('startinput').addEventListener('input',progLandsPreview);
+document.getElementById('proglen').addEventListener('input',progLandsPreview);
 document.getElementById('startsave').onclick=()=>{
   const v=document.getElementById('startinput').value;
-  if(v){ state.start=v; save(); renderAll(); }
+  const wk=Math.max(4,Math.min(30,Math.round(+document.getElementById('proglen').value)||16));
+  const w0=+document.getElementById('progw0').value||state.prog.w0;
+  const goal=+document.getElementById('proggoal').value||state.prog.goal;
+  if(goal>=w0){ showToast('Goal must be below start weight'); return; }
+  if(v) state.start=v;
+  state.prog={weeks:wk, w0, goal};
+  save(); renderAll();
   document.getElementById('startdlg').close();
+  showToast('Program updated');
 };
 
 /* ---------------- TODAY ---------------- */
@@ -596,7 +638,7 @@ function animateWeight(){
   const to=+el.dataset.w; if(!to) return;
   if(REDUCED){ el.firstChild.textContent=to.toFixed(1); return; }
   cancelAnimationFrame(weightRaf);
-  const from=Math.min(180,to+3), start=performance.now(), dur=900;
+  const from=Math.min(state.prog.w0,to+3), start=performance.now(), dur=900;
   const step=now=>{
     let p=Math.min(1,(now-start)/dur); p=1-Math.pow(1-p,3);
     el.firstChild.textContent=(from+(to-from)*p).toFixed(1);
@@ -662,10 +704,11 @@ function renderToday(){
     : 'Manual override — back to Auto at midnight.';
   const phase = w<=2 ? `<div class="callout au" style="animation-delay:.04s">Weeks 1–2: everything at 3–4 reps in the tank. Expect 3–5 lbs down — mostly water, don’t extrapolate it.</div>`
     : (w>=6&&w<=7)||(w>=13&&w<=14) ? `<div class="callout warn au" style="animation-delay:.04s">Diet-break decision point: two warning signs showing → take a week at ~2,400 maintenance.</div>` : '';
-  const pct = cur!=null ? Math.max(0,Math.min(1,(180-cur)/20)) : 0;
+  const P=state.prog;
+  const pct = cur!=null ? Math.max(0,Math.min(1,(P.w0-cur)/Math.max(1,P.w0-P.goal))) : 0;
   const CIRC=2*Math.PI*40;
   document.getElementById('tab-today').innerHTML=`
-    <div class="eyebrow au"><span>${dayName} · Week ${w}</span><button id="editstart">edit start</button></div>
+    <div class="eyebrow au"><span>${dayName} · Week ${w}</span><button id="editstart">program</button></div>
     ${phase}
     ${cur!=null?`
     <div class="au" style="display:flex;align-items:center;gap:16px;margin-top:14px;animation-delay:.06s">
@@ -681,10 +724,10 @@ function renderToday(){
         <text x="48" y="60" text-anchor="middle" fill="var(--mut)" font-family="Schibsted Grotesk,sans-serif" font-size="9" font-weight="600">TO GOAL</text>
       </svg>
     </div>
-    <div class="au" style="display:flex;justify-content:space-between;margin-top:8px;font-weight:600;font-size:11px;color:var(--mut);animation-delay:.1s"><span>started 180</span><span class="num">goal 160 · ${Math.max(0,cur-160).toFixed(1)} to go</span></div>`
+    <div class="au" style="display:flex;justify-content:space-between;margin-top:8px;font-weight:600;font-size:11px;color:var(--mut);animation-delay:.1s"><span>started ${P.w0}</span><span class="num">goal ${P.goal} · ${Math.max(0,cur-P.goal).toFixed(1)} to go</span></div>`
     :`
     <div class="hero au" style="animation-delay:.06s">
-      <div class="hsub">THE 180 → 160 ARC</div>
+      <div class="hsub">THE ${P.w0} → ${P.goal} ARC</div>
       <div class="big" style="font-size:24px;margin-top:8px">Log your first weigh-in</div>
       <div style="margin-top:8px;font-size:13px;color:var(--hero-sub)">The ring, the weekly rate and the goal date all build from it.</div>
       <button class="btn" style="margin-top:12px;background:var(--mint);color:#16181A" data-go="trend">Open Trend</button>
@@ -717,6 +760,10 @@ function bindStart(){
   const b=document.getElementById('editstart');
   if(b) b.onclick=()=>{
     document.getElementById('startinput').value=state.start;
+    document.getElementById('proglen').value=state.prog.weeks;
+    document.getElementById('progw0').value=state.prog.w0;
+    document.getElementById('proggoal').value=state.prog.goal;
+    progLandsPreview();
     document.getElementById('startdlg').showModal();
   };
 }
@@ -1509,7 +1556,11 @@ function renderTrend(){
   else if(rate>2.25){ cls='style="color:var(--crit)"'; advice=`Down ${rate.toFixed(1)} lbs/wk — too fast, you’re burning muscle. Add 100–150 calories back.`; }
   else advice=`Down ${rate.toFixed(1)} lbs/wk — right in the 1.5–2 pocket. Change nothing.`;
   const cur = a7!=null?a7:(latest?latest.w:null);
-  const miles=[{w:175,l:'175 lb'},{w:170,l:'170 lb'},{w:165,l:'165 lb'},{w:160,l:'160 lb · goal'}];
+  const P=state.prog;
+  const miles=[];
+  { let m=Math.floor((P.w0-0.01)/5)*5; if(m>=P.w0) m-=5;
+    while(m>P.goal){ miles.push({w:m,l:m+' lb'}); m-=5; }
+    miles.push({w:P.goal,l:P.goal+' lb · goal'}); }
   const sorted=[...state.weights].sort((a,b)=>a.d<b.d?-1:1);
   function hitWeek(mw){ // week the milestone was first reached
     const p=sorted.find(p=>p.w<=mw); if(!p) return '';
@@ -1533,14 +1584,14 @@ function renderTrend(){
   }).join('');
   const goal=estGoalDate();
   document.getElementById('tab-trend').innerHTML=`
-    <div class="eyebrow au"><span style="font-size:20px;font-weight:800;letter-spacing:-.02em;text-transform:none;color:var(--ink)">Trend</span><span class="note">since ${fmtShort(state.start)}</span></div>
+    <div class="eyebrow au"><span style="font-size:20px;font-weight:800;letter-spacing:-.02em;text-transform:none;color:var(--ink)">Trend</span><span class="note">${state.prog.weeks} wks · lands ${fmtShort(progEndISO())}</span></div>
     <div class="hero au" style="animation-delay:.06s">
       <div style="display:flex;justify-content:space-between;align-items:baseline">
         <div class="big num" style="font-size:30px">${latest?latest.w.toFixed(1):'—'}<span style="font-size:14px;color:var(--hero-sub);font-weight:500"> lb</span></div>
-        <div style="font-weight:700;font-size:13px" class="mint num">${latest?'−'+(180-latest.w).toFixed(1)+' total':''}</div>
+        <div style="font-weight:700;font-size:13px" class="mint num">${latest?'−'+(P.w0-latest.w).toFixed(1)+' total':''}</div>
       </div>
       <div class="chartbox" id="chartbox" style="margin-top:8px"><div class="tip" id="tip"></div></div>
-      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;font-weight:500;color:var(--hero-sub)"><span>Wk 1 · 180</span><span>goal 160</span></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:9.5px;font-weight:500;color:var(--hero-sub)"><span>Wk 1 · ${P.w0}</span><span>goal ${P.goal}</span></div>
     </div>
     <div class="au" style="display:grid;grid-template-columns:1fr 1fr;gap:11px;animation-delay:.1s">
       <div class="wcard" style="margin:0"><div style="font-weight:600;font-size:10px;letter-spacing:.04em;color:var(--mut)">AVG RATE</div><div style="font-weight:800;font-size:20px;margin-top:7px" class="num">${rate!=null?'−'+Math.abs(rate).toFixed(1):'—'}<span style="font-size:11px;color:var(--sub);font-weight:500"> lb/wk</span></div><div class="fine" style="margin-top:3px">target 1.5–2</div></div>
@@ -1569,7 +1620,7 @@ function renderTrend(){
     <div class="eyebrow"><span>Consistency</span><span class="note">primer + sessions, per day</span></div>
     <div class="wcard">
       <div class="heatwrap"><div class="heat">${(()=>{
-        const start=parseISO(state.start), today=parseISO(todayISO());
+        const start=mondayOfStart(), today=parseISO(todayISO()), day1=parseISO(state.start);
         const totalWk=Math.max(1,Math.floor((today-start)/(7*864e5))+1);
         const firstWk=Math.max(0,totalWk-18);
         const cols=[]; const shades=['var(--track)','#BFE3DC','#5FB3A8','#0E7C74'];
@@ -1578,7 +1629,7 @@ function renderTrend(){
           let col='';
           for(let d=0;d<7;d++){
             const dt=new Date(start); dt.setDate(dt.getDate()+wk*7+d);
-            if(dt>today){ col+='<i style="visibility:hidden"></i>'; continue; }
+            if(dt>today||dt<day1){ col+='<i style="visibility:hidden"></i>'; continue; }
             const iso=isoOf(dt);
             const pr=(state.primer[iso]||[]).filter(Boolean).length===4?1:0;
             const dn=state.done[iso]||{};
@@ -1638,12 +1689,15 @@ function drawChart(){
   const t0=parseISO(ws[0].d).getTime();
   const t1=Math.max(parseISO(ws[ws.length-1].d).getTime(), t0+14*864e5);
   const vals=ws.map(p=>p.w);
-  const yMax=Math.max(...vals,180)+1, yMin=Math.min(...vals,160)-1;
+  const P=state.prog;
+  const yMax=Math.max(...vals,P.w0)+1, yMin=Math.min(...vals,P.goal)-1;
   const X=t=>L+(t-t0)/(t1-t0)*(W-L-R);
   const Y=v=>T+(yMax-v)/(yMax-yMin)*(H-T-B);
   let g='';
-  // the arc to beat: a straight dashed line from the 180 start to the 160 goal
-  g+=`<line x1="${L}" y1="${Y(180)}" x2="${W-R}" y2="${Y(160)}" stroke="#2B2E31" stroke-width="1" stroke-dasharray="3 3"/>`;
+  // the arc to beat: w0 → goal over the program length, evaluated across the visible window
+  const sT=mondayOfStart().getTime(), eT=sT+P.weeks*7*864e5;
+  const gAt=t=>P.w0+(P.goal-P.w0)*Math.min(1.15,Math.max(0,(t-sT)/(eT-sT)));
+  g+=`<line x1="${L}" y1="${Y(gAt(t0))}" x2="${W-R}" y2="${Y(gAt(t1))}" stroke="#2B2E31" stroke-width="1" stroke-dasharray="3 3"/>`;
   const pts=ws.map(p=>[X(parseISO(p.d).getTime()),Y(p.w)]);
   if(pts.length>1) g+=`<path class="trendline" pathLength="300" stroke-dasharray="300" stroke-dashoffset="300" style="animation:drawLine 1.2s .15s ease forwards" d="M${pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join('L')}" fill="none" stroke="#5FD3C6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
   const lp=pts[pts.length-1];
@@ -2005,7 +2059,7 @@ function pushWidgetData(){
     const wxOn=!!(wxAdjust(t.am.kind,'am')||wxAdjust(t.pm.kind,'pm'));
     WB.set({json: JSON.stringify({
       w: cur!=null?+cur.toFixed(1):0,
-      pct: cur!=null?Math.round(Math.max(0,Math.min(1,(180-cur)/20))*100):0,
+      pct: cur!=null?Math.round(Math.max(0,Math.min(1,(state.prog.w0-cur)/Math.max(1,state.prog.w0-state.prog.goal)))*100):0,
       delta: rate!=null?+rate.toFixed(1):0,
       streak: streak(), wk: Math.max(1,weekNum()),
       amT: t.am.t, amDone: !!dn.am, pmT: t.pm.t, pmDone: !!dn.pm,
